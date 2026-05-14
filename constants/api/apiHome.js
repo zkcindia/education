@@ -1,6 +1,6 @@
 import axios from 'axios';
 // const API_URL = 'https://tapas.bc-pl.com';
-const API_URL = 'http://172.20.10.2:8000';
+const API_URL = 'http://192.168.29.78:8000';
 
 
 export const allClassFetch = async(search)=>{
