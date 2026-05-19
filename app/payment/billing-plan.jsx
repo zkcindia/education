@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Modal,
 } from "react-native";
 import { router } from "expo-router";
 import RazorpayCheckout from "react-native-razorpay";
+
 import {
   getAllPlans,
   createPaymentOrder,
@@ -22,7 +22,6 @@ export default function BillingPlanScreen() {
   const [activeTab, setActiveTab] = useState("monthly");
   const [loading, setLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     fetchPlans();
@@ -42,63 +41,72 @@ export default function BillingPlanScreen() {
         setPlans({ monthly: [], yearly: [] });
       }
     } catch (error) {
-      console.log("Plans Error:", error);
+      console.log("Plans Error:", error?.response?.data || error.message);
       setPlans({ monthly: [], yearly: [] });
     } finally {
       setLoading(false);
     }
   };
 
-const handlePayment = async (plan) => {
-  try {
-    console.log("✅ Gateway API calling...");
+  const handlePayment = async (plan) => {
+    try {
+      setPaymentLoading(true);
 
-    const orderData = await createPaymentOrder(plan.price);
+      console.log("1. Gateway API calling...");
 
-    console.log("✅ Gateway API response:", orderData);
+      const orderData = await createPaymentOrder(plan.price_per_month);
 
-    const options = {
-      key: orderData.razorpay_key,
-      amount: orderData.amount,
-      currency: "INR",
-      order_id: orderData.razorpay_order_id,
-      name: "Education App",
-      description: `${plan.name} Plan`,
-      prefill: {
-        name: "Student",
-        email: "student@gmail.com",
-        contact: "9999999999",
-      },
-      theme: {
-        color: "#EA580C",
-      },
-    };
+      console.log("2. Gateway API response:", orderData);
 
-    const paymentResponse = await RazorpayCheckout.open(options);
+      const options = {
+        key: orderData.razorpay_key,
+        amount: orderData.amount,
+        currency: orderData.currency || "INR",
+        order_id: orderData.razorpay_order_id,
+        name: "Education App",
+        description: `${plan.duration} Plan`,
+        prefill: {
+          name: "Student",
+          email: "student@gmail.com",
+          contact: "9999999999",
+        },
+        theme: {
+          color: "#EA580C",
+        },
+      };
 
-    console.log("✅ Razorpay Success:", paymentResponse);
+      console.log("3. Razorpay opening...");
 
-    console.log("✅ Verify Payment API calling...");
+      const paymentResponse = await RazorpayCheckout.open(options);
 
-    const verification = await verifyPayment({
-      razorpay_payment_id: paymentResponse.razorpay_payment_id,
-      razorpay_order_id: paymentResponse.razorpay_order_id,
-      razorpay_signature: paymentResponse.razorpay_signature,
-      plan,
-    });
+      console.log("4. Razorpay success response:", paymentResponse);
 
-    console.log("✅ Verify Payment API response:", verification);
+      console.log("5. Verify API calling...");
 
-    if (verification?.status === "success") {
-      setShowSuccessModal(true);
-    } else {
+      const verification = await verifyPayment({
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_order_id: paymentResponse.razorpay_order_id,
+        razorpay_signature: paymentResponse.razorpay_signature,
+        plan,
+      });
+
+      console.log("6. Verify API response:", verification);
+
+      if (verification?.status === "success" || verification?.message) {
+        console.log("✅ Payment Verified Successfully");
+        router.push("/payment/success");
+      } else {
+        console.log("❌ Verification Failed");
+        router.push("/payment/failed");
+      }
+    } catch (error) {
+      console.log("Payment Error:", error?.message);
+      console.log("BACKEND ERROR:", error?.response?.data);
       router.push("/payment/failed");
+    } finally {
+      setPaymentLoading(false);
     }
-  } catch (error) {
-    console.log("❌ Payment Error:", error);
-    router.push("/payment/failed");
-  }
-};
+  };
 
   const activePlans = plans[activeTab] || [];
 
@@ -114,7 +122,7 @@ const handlePayment = async (plan) => {
         <View style={styles.header}>
           <Text style={styles.title}>Choose Your Plan</Text>
           <Text style={styles.subtitle}>
-            Select the perfect plan for your learning needs
+            Select one subscription and unlock all courses, tests and notes
           </Text>
         </View>
 
@@ -155,99 +163,38 @@ const handlePayment = async (plan) => {
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color="#EA580C" style={{ marginTop: 40 }} />
+          <ActivityIndicator
+            size="large"
+            color="#EA580C"
+            style={{ marginTop: 40 }}
+          />
         ) : activePlans.length > 0 ? (
           activePlans.map((plan, index) => (
-            <View
-              key={plan.id || index}
-              style={[
-                styles.planCard,
-                plan.featured && styles.featuredCard,
-              ]}
-            >
-              {plan.featured && (
-                <View style={styles.popularBadge}>
-                  <Text style={styles.popularText}>Most Popular</Text>
-                </View>
-              )}
+            <View key={plan.id || index} style={styles.planCard}>
+              <Text style={styles.planName}>{plan.duration} Plan</Text>
 
-              <Text
-                style={[
-                  styles.planName,
-                  plan.featured && styles.featuredText,
-                ]}
-              >
-                {plan.name}
-              </Text>
-
-              <Text
-                style={[
-                  styles.planDescription,
-                  plan.featured && styles.featuredSubText,
-                ]}
-              >
-                {plan.description || "Best plan for students"}
+              <Text style={styles.planDescription}>
+                {plan.ideal_for || "Best plan for students"}
               </Text>
 
               <View style={styles.priceRow}>
-                <Text
-                  style={[
-                    styles.price,
-                    plan.featured && styles.featuredText,
-                  ]}
-                >
-                  ₹{plan.price}
-                </Text>
-
-                <Text
-                  style={[
-                    styles.duration,
-                    plan.featured && styles.featuredSubText,
-                  ]}
-                >
-                  / {plan.duration || activeTab}
-                </Text>
+                <Text style={styles.price}>₹{plan.price_per_month}</Text>
+                <Text style={styles.duration}>/ {plan.duration}</Text>
               </View>
 
               <View style={styles.featuresBox}>
-                {plan?.features?.length > 0 ? (
-                  plan.features.map((feature, i) => (
-                    <Text
-                      key={i}
-                      style={[
-                        styles.featureText,
-                        plan.featured && styles.featuredSubText,
-                      ]}
-                    >
+                {plan?.key_features?.length > 0 ? (
+                  plan.key_features.map((feature, i) => (
+                    <Text key={i} style={styles.featureText}>
                       ✅ {feature}
                     </Text>
                   ))
                 ) : (
                   <>
-                    <Text
-                      style={[
-                        styles.featureText,
-                        plan.featured && styles.featuredSubText,
-                      ]}
-                    >
-                      ✅ Course Access
-                    </Text>
-                    <Text
-                      style={[
-                        styles.featureText,
-                        plan.featured && styles.featuredSubText,
-                      ]}
-                    >
-                      ✅ Notes Included
-                    </Text>
-                    <Text
-                      style={[
-                        styles.featureText,
-                        plan.featured && styles.featuredSubText,
-                      ]}
-                    >
-                      ✅ Certificate
-                    </Text>
+                    <Text style={styles.featureText}>✅ All Courses</Text>
+                    <Text style={styles.featureText}>✅ Mock Tests</Text>
+                    <Text style={styles.featureText}>✅ Notes Included</Text>
+                    <Text style={styles.featureText}>✅ Certificate Access</Text>
                   </>
                 )}
               </View>
@@ -255,7 +202,7 @@ const handlePayment = async (plan) => {
               <TouchableOpacity
                 style={[
                   styles.getStartedButton,
-                  plan.featured && styles.featuredButton,
+                  paymentLoading && styles.disabledButton,
                 ]}
                 onPress={() => handlePayment(plan)}
                 disabled={paymentLoading}
@@ -277,53 +224,19 @@ const handlePayment = async (plan) => {
 
           {[
             "Can I change plans later?",
-            "Do you offer yearly discounts?",
-            "What payment methods are accepted?",
-            "Is there a free trial?",
+            "Do I get all courses?",
+            "Are mock tests included?",
+            "Will I get certificate access?",
           ].map((question, index) => (
             <View key={index} style={styles.faqItem}>
               <Text style={styles.question}>{question}</Text>
               <Text style={styles.answer}>
-                Yes, you can manage your plan from your billing section.
+                Yes, your subscription gives access based on your selected plan.
               </Text>
             </View>
           ))}
         </View>
       </ScrollView>
-
-      <Modal visible={showSuccessModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.successModal}>
-            <Text style={styles.successIcon}>✅</Text>
-
-            <Text style={styles.successTitle}>Payment Successful!</Text>
-
-            <Text style={styles.successSubtitle}>
-              Your plan has been activated successfully.
-            </Text>
-
-            <TouchableOpacity
-              style={styles.dashboardButton}
-              onPress={() => {
-                setShowSuccessModal(false);
-                router.push("/");
-              }}
-            >
-              <Text style={styles.dashboardText}>Go to Home</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.billingButton}
-              onPress={() => {
-                setShowSuccessModal(false);
-                router.push("/payment/billing");
-              }}
-            >
-              <Text style={styles.billingButtonText}>View Billing</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -363,6 +276,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
     fontSize: 16,
+    lineHeight: 22,
   },
 
   tabContainer: {
@@ -399,26 +313,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 22,
     elevation: 4,
-    position: "relative",
-  },
-
-  featuredCard: {
-    backgroundColor: "#EA580C",
-  },
-
-  popularBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#fff",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    marginBottom: 14,
-  },
-
-  popularText: {
-    color: "#EA580C",
-    fontSize: 12,
-    fontWeight: "bold",
   },
 
   planName: {
@@ -427,18 +321,10 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
 
-  featuredText: {
-    color: "#fff",
-  },
-
   planDescription: {
     color: "#6B7280",
     marginTop: 8,
     fontSize: 15,
-  },
-
-  featuredSubText: {
-    color: "#FFEDD5",
   },
 
   priceRow: {
@@ -477,8 +363,8 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
 
-  featuredButton: {
-    backgroundColor: "#111827",
+  disabledButton: {
+    opacity: 0.6,
   },
 
   getStartedText: {
@@ -522,70 +408,5 @@ const styles = StyleSheet.create({
   answer: {
     color: "#6B7280",
     marginTop: 6,
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-
-  successModal: {
-    backgroundColor: "#fff",
-    width: "100%",
-    borderRadius: 24,
-    padding: 28,
-    alignItems: "center",
-  },
-
-  successIcon: {
-    fontSize: 70,
-  },
-
-  successTitle: {
-    fontSize: 25,
-    fontWeight: "bold",
-    color: "#111827",
-    marginTop: 18,
-  },
-
-  successSubtitle: {
-    color: "#6B7280",
-    textAlign: "center",
-    marginTop: 10,
-    fontSize: 15,
-  },
-
-  dashboardButton: {
-    backgroundColor: "#22C55E",
-    width: "100%",
-    paddingVertical: 15,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 25,
-  },
-
-  dashboardText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-
-  billingButton: {
-    width: "100%",
-    paddingVertical: 15,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: "#EA580C",
-  },
-
-  billingButtonText: {
-    color: "#EA580C",
-    fontWeight: "bold",
-    fontSize: 16,
   },
 });

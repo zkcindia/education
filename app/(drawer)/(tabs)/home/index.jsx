@@ -58,7 +58,24 @@ export default function Index() {
             </Text>
           </View>
 
-          <FontAwesome name="bell" size={20} color="black" />
+<View style={styles.rightHeaderContainer}>
+
+  <TouchableOpacity
+    style={styles.premiumButton}
+    onPress={() => router.push('/payment/billing')}
+  >
+    <Text style={styles.premiumButtonText}>
+      👑 upgrade Premium
+    </Text>
+  </TouchableOpacity>
+
+  {/* <FontAwesome
+    name="bell"
+    size={20}
+    color="black"
+  /> */}
+
+</View>
         </View>
 
         {/* Stats */}
@@ -289,5 +306,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'roboto-bold',
   },
+
+
+  // preminum button part
+
+  rightHeaderContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+},
+
+premiumButton: {
+  backgroundColor: '#7C3AED',
+  paddingHorizontal: 7,
+  paddingVertical: 7,
+  borderRadius: 20,
+  shadowColor: '#7C3AED',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.25,
+  shadowRadius: 4,
+  elevation: 4,
+},
+
+premiumButtonText: {
+  color: 'white',
+  fontSize: 12,
+  fontFamily: 'roboto-bold',
+},
 
 });

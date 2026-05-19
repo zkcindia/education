@@ -29,26 +29,61 @@ export default function signUp() {
         }
     try {
       const response = await signInUser({email,password});
-      if(response.status === 200){
-        const userData = JSON.stringify(response.data); // Convert user data to string
-        console.log(response.data);
-        if(response.data.teacher_data){
-          const teacher_data = JSON.stringify(response.data.teacher_data);
-          await AsyncStorage.setItem('userData', teacher_data);
-          navigation.navigate('(tabs2)')
-        }else if(response.data.user_data){
-          const userData = JSON.stringify(response.data.user_data);
-          await AsyncStorage.setItem('userData', userData);
-          navigation.navigate('(drawer)')
-        }
-        toast.show(response.data.message, {
-          type: 'success',
-          duration: 2000,
-          animationType: 'zoom-in',
-          placement:'top',
-        })
-        
-      }
+if(response.status === 200){
+
+  console.log("LOGIN RESPONSE:", response.data);
+
+  // SAVE ACCESS TOKEN
+  if(response.data.access){
+    await AsyncStorage.setItem(
+      'access',
+      response.data.access
+    );
+  }
+
+  // SAVE REFRESH TOKEN
+  if(response.data.refresh){
+    await AsyncStorage.setItem(
+      'refresh',
+      response.data.refresh
+    );
+  }
+
+  // SAVE USER DATA
+  if(response.data.teacher_data){
+
+    const teacher_data = JSON.stringify(
+      response.data.teacher_data
+    );
+
+    await AsyncStorage.setItem(
+      'userData',
+      teacher_data
+    );
+
+    navigation.navigate('(tabs2)');
+
+  } else if(response.data.user_data){
+
+    const userData = JSON.stringify(
+      response.data.user_data
+    );
+
+    await AsyncStorage.setItem(
+      'userData',
+      userData
+    );
+
+    navigation.navigate('(drawer)');
+  }
+
+  toast.show(response.data.message, {
+    type: 'success',
+    duration: 2000,
+    animationType: 'zoom-in',
+    placement:'top',
+  });
+}
     } catch (error) {
       toast.show('Some error occure',{
         type: 'danger',
