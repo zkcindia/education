@@ -4,10 +4,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const API_URL = "http://192.168.29.78:8000";
 
 const getToken = async () => {
-  const accessToken = await AsyncStorage.getItem("accessToken");
   const access = await AsyncStorage.getItem("access");
 
-  return accessToken || access;
+  console.log("ACCESS TOKEN USED:", access);
+
+  return access;
 };
 
 export const myPayments = async () => {
@@ -62,18 +63,31 @@ export const verifyPayment = async ({
 
   console.log("PLAN:", plan);
 
-  const token = await getToken();
+  // const token = await getToken();
+  
 
-  const formData = new FormData();
+const token = await getToken();
 
-  formData.append("razorpay_payment_id", razorpay_payment_id);
-  formData.append("razorpay_order_id", razorpay_order_id);
-  formData.append("razorpay_signature", razorpay_signature);
+const userData = await AsyncStorage.getItem("userData");
 
-  // Your backend plan keys
+const parsedUser = userData
+  ? JSON.parse(userData)
+  : null;
+
+const formData = new FormData();
+
+formData.append("razorpay_payment_id", razorpay_payment_id);
+formData.append("razorpay_order_id", razorpay_order_id);
+formData.append("razorpay_signature", razorpay_signature);
+
 formData.append("plan_name", `${plan?.duration} Plan`);
 formData.append("duration", plan?.duration || "");
 formData.append("plan_id", String(plan?.id || ""));
+
+formData.append(
+  "student_id",
+  String(parsedUser?.id || "")
+);
 
   const response = await axios.post(
     `${API_URL}/verify-cart-payment/`,

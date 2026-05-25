@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,16 @@ import {
 import { router } from 'expo-router';
 
 export default function FailedScreen() {
+
+  useEffect(() => {
+
+  const timer = setTimeout(() => {
+    router.replace('/login');
+  }, 2000);
+
+  return () => clearTimeout(timer);
+
+}, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,7 +38,8 @@ export default function FailedScreen() {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => router.push('/payment')}
+        // onPress={() => router.push('/payment')}
+        onPress={() => router.replace('/login')}
       >
         <Text style={styles.buttonText}>
           Try Again

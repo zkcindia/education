@@ -33,21 +33,19 @@ if(response.status === 200){
 
   console.log("LOGIN RESPONSE:", response.data);
 
-  // SAVE ACCESS TOKEN
-  if(response.data.access){
-    await AsyncStorage.setItem(
-      'access',
-      response.data.access
-    );
-  }
+if(response.data.access_token){
+  await AsyncStorage.setItem(
+    'access',
+    response.data.access_token
+  );
+}
 
-  // SAVE REFRESH TOKEN
-  if(response.data.refresh){
-    await AsyncStorage.setItem(
-      'refresh',
-      response.data.refresh
-    );
-  }
+if(response.data.refresh_token){
+  await AsyncStorage.setItem(
+    'refresh',
+    response.data.refresh_token
+  );
+}
 
   // SAVE USER DATA
   if(response.data.teacher_data){

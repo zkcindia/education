@@ -19,7 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_URL = 'http://172.20.10.2:8000';
+const API_URL = 'http://192.168.29.78:8000';
 
 export default function MyProfileScreen() {
   const navigation = useNavigation();
