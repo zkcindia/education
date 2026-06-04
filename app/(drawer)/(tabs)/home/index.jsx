@@ -128,46 +128,6 @@ export default function Index() {
 
 
 
-        {/* Premium Payment Card */}
-        <View style={styles.paymentContainer}>
-
-          <Text style={styles.paymentTitle}>
-            Premium Course
-          </Text>
-
-          <View style={styles.paymentCard}>
-
-            <Text style={styles.courseTitle}>
-              React Native Masterclass
-            </Text>
-
-            <Text style={styles.courseSubtitle}>
-              Lifetime Access + Certificate Included
-            </Text>
-
-            <Image
-              source={{
-                uri: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3',
-              }}
-              style={styles.paymentImage}
-            />
-
-            <Text style={styles.priceText}>
-              ₹999
-            </Text>
-
-            <TouchableOpacity
-              style={styles.buyButton}
-              onPress={() => router.push('/payment')}
-            >
-              <Text style={styles.buyButtonText}>
-                Buy Now
-              </Text>
-            </TouchableOpacity>
-
-          </View>
-
-        </View>
 
       </ScrollView>
     </SafeAreaView>

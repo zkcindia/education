@@ -16,13 +16,24 @@ import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
 
+import {
+  withdrawPayment,
+  getWalletBalance,
+} from "../../../../constants/api/apiPayment";
+
 export default function ReferEarnScreen() {
   const [user, setUser] = useState(null);
   const [bankAccount, setBankAccount] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [totalReferrals, setTotalReferrals] = useState(0);
+
   const [showBankModal, setShowBankModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+
   const [bankForm, setBankForm] = useState({
+    bankName: "",
     accountNumber: "",
     ifscCode: "",
     accountHolderName: "",
@@ -30,6 +41,7 @@ export default function ReferEarnScreen() {
 
   useEffect(() => {
     loadData();
+    loadWalletBalance();
   }, []);
 
   const loadData = async () => {
@@ -37,12 +49,26 @@ export default function ReferEarnScreen() {
     const savedBank = await AsyncStorage.getItem("bankAccount");
 
     if (userData) setUser(JSON.parse(userData));
-    if (savedBank) setBankAccount(JSON.parse(savedBank));
+
+    if (savedBank) {
+      const parsedBank = JSON.parse(savedBank);
+      setBankAccount(parsedBank);
+      setBankForm(parsedBank);
+    }
+  };
+
+  const loadWalletBalance = async () => {
+    try {
+      const data = await getWalletBalance();
+      setWalletBalance(Number(data.current_balance || 0));
+      setTotalReferrals(Number(data.total_referrals || 0));
+    } catch (error) {
+      console.log("Wallet Balance Error:", error.response?.data || error.message);
+    }
   };
 
   const referralCode = user?.referral_code || "NO-CODE";
-  const totalEarnings = user?.wallet_balance || 500;
-  const totalReferrals = user?.total_referrals || 0;
+  const totalEarnings = walletBalance;
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(referralCode);
@@ -57,6 +83,7 @@ export default function ReferEarnScreen() {
 
   const saveBankAccount = async () => {
     if (
+      !bankForm.bankName ||
       !bankForm.accountNumber ||
       !bankForm.ifscCode ||
       !bankForm.accountHolderName
@@ -68,48 +95,62 @@ export default function ReferEarnScreen() {
     await AsyncStorage.setItem("bankAccount", JSON.stringify(bankForm));
     setBankAccount(bankForm);
     setShowBankModal(false);
-    Alert.alert("Success", "Bank account added successfully");
+    setShowWithdrawModal(true);
+    Alert.alert("Success", "Bank details added. Now request withdrawal again.");
   };
 
   const handleWithdraw = async () => {
-    const amount = parseFloat(withdrawAmount);
+    const amount = Number(withdrawAmount);
 
-    if (!amount || amount < 100) {
-      Alert.alert("Error", "Minimum withdrawal is ₹100");
+    if (!amount || amount < 10) {
+      Alert.alert("Error", "Minimum withdrawal is ₹10");
       return;
     }
 
     if (amount > totalEarnings) {
-      Alert.alert(
-        "Error",
-        `Insufficient balance. Available: ₹${totalEarnings}`,
-      );
+      Alert.alert("Error", "Insufficient wallet balance");
       return;
     }
 
-    // Update wallet balance
-    const updatedUser = { ...user, wallet_balance: totalEarnings - amount };
-    setUser(updatedUser);
-    await AsyncStorage.setItem("userData", JSON.stringify(updatedUser));
+    try {
+      setWithdrawing(true);
 
-    // Save transaction
-    const transactions = (await AsyncStorage.getItem("transactions")) || "[]";
-    const parsed = JSON.parse(transactions);
-    parsed.unshift({
-      id: Date.now(),
-      amount,
-      status: "pending",
-      date: new Date().toISOString(),
-      bankAccount: bankAccount.accountNumber.slice(-4),
-    });
-    await AsyncStorage.setItem("transactions", JSON.stringify(parsed));
+      const data = {
+        amount,
+        bank_name: bankAccount?.bankName || "",
+        account_number: bankAccount?.accountNumber || "",
+        ifsc_code: bankAccount?.ifscCode || "",
+        account_holder_name: bankAccount?.accountHolderName || "",
+      };
 
-    setShowWithdrawModal(false);
-    setWithdrawAmount("");
-    Alert.alert(
-      "Success",
-      `Withdrawal request for ₹${amount} submitted successfully`,
-    );
+      const response = await withdrawPayment(data);
+
+      setShowWithdrawModal(false);
+      setWithdrawAmount("");
+
+      await loadWalletBalance();
+
+      Alert.alert(
+        "Success",
+        response.message || `Withdrawal request for ₹${amount} submitted successfully`
+      );
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Withdrawal failed";
+
+      if (errorMessage === "Please update bank details first") {
+        setShowWithdrawModal(false);
+        setShowBankModal(true);
+        return;
+      }
+
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setWithdrawing(false);
+    }
   };
 
   const maskBankNumber = (number) => {
@@ -128,30 +169,23 @@ export default function ReferEarnScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Wallet Card */}
         <View style={styles.walletCard}>
           <View style={styles.walletHeader}>
-            <MaterialCommunityIcons
-              name="wallet-outline"
-              size={24}
-              color="#EA580C"
-            />
+            <MaterialCommunityIcons name="wallet-outline" size={24} color="#EA580C" />
             <Text style={styles.walletTitle}>My Wallet</Text>
           </View>
+
           <Text style={styles.walletBalance}>₹{totalEarnings}</Text>
           <Text style={styles.walletSubtext}>Available Balance</Text>
 
-          {/* Bank Account Section */}
-          {bankAccount ? (
+          {bankAccount && (
             <View style={styles.bankInfoBox}>
               <View style={styles.bankInfoRow}>
                 <MaterialCommunityIcons name="bank" size={20} color="#10B981" />
                 <View style={styles.bankInfoDetails}>
-                  <Text style={styles.bankInfoName}>
-                    {bankAccount.accountHolderName}
-                  </Text>
+                  <Text style={styles.bankInfoName}>{bankAccount.accountHolderName}</Text>
                   <Text style={styles.bankInfoNumber}>
-                    {maskBankNumber(bankAccount.accountNumber)}
+                    {bankAccount.bankName} • {maskBankNumber(bankAccount.accountNumber)}
                   </Text>
                 </View>
                 <TouchableOpacity onPress={() => setShowBankModal(true)}>
@@ -159,56 +193,34 @@ export default function ReferEarnScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addBankBtn}
-              onPress={() => setShowBankModal(true)}
-            >
-              <MaterialCommunityIcons
-                name="plus-circle"
-                size={20}
-                color="#EA580C"
-              />
-              <Text style={styles.addBankText}>
-                Add Bank Account for Withdrawal
-              </Text>
-            </TouchableOpacity>
           )}
 
-          {/* Withdraw Button */}
           <TouchableOpacity
             style={[
               styles.withdrawBtn,
-              (!bankAccount || totalEarnings < 100) && styles.disabledBtn,
+              totalEarnings < 10 && styles.disabledBtn,
             ]}
-            onPress={() => bankAccount && setShowWithdrawModal(true)}
-            disabled={!bankAccount || totalEarnings < 100}
+            onPress={() => setShowWithdrawModal(true)}
+            disabled={totalEarnings < 10}
           >
-            <MaterialCommunityIcons
-              name="bank-transfer"
-              size={20}
-              color="#fff"
-            />
+            <MaterialCommunityIcons name="bank-transfer" size={20} color="#fff" />
             <Text style={styles.withdrawBtnText}>Withdraw to Bank</Text>
           </TouchableOpacity>
 
-          {totalEarnings < 100 && (
-            <Text style={styles.minWithdrawText}>Minimum withdrawal: ₹100</Text>
+          {totalEarnings < 10 && (
+            <Text style={styles.minWithdrawText}>Minimum withdrawal: ₹10</Text>
           )}
         </View>
 
-        {/* Referral Card */}
         <View style={styles.referralCard}>
-          <MaterialCommunityIcons
-            name="gift-outline"
-            size={60}
-            color="#EA580C"
-          />
+          <MaterialCommunityIcons name="gift-outline" size={60} color="#EA580C" />
           <Text style={styles.title}>Earn ₹100 per Referral</Text>
+
           <View style={styles.codeBox}>
             <Text style={styles.codeLabel}>Your Code</Text>
             <Text style={styles.codeText}>{referralCode}</Text>
           </View>
+
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.copyBtn} onPress={handleCopy}>
               <Text style={styles.buttonText}>Copy Code</Text>
@@ -219,7 +231,6 @@ export default function ReferEarnScreen() {
           </View>
         </View>
 
-        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>₹{totalEarnings}</Text>
@@ -231,31 +242,33 @@ export default function ReferEarnScreen() {
           </View>
         </View>
 
-        {/* How it works */}
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>How it works</Text>
-          <Text style={styles.step}>
-            1. Share your referral code with friends
-          </Text>
+          <Text style={styles.step}>1. Share your referral code with friends</Text>
           <Text style={styles.step}>2. Friend signs up using your code</Text>
-          <Text style={styles.step}>
-            3. You earn ₹100 after their first purchase
-          </Text>
+          <Text style={styles.step}>3. You earn ₹100 after their first purchase</Text>
         </View>
       </ScrollView>
 
-      {/* Bank Account Modal */}
       <Modal visible={showBankModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {bankAccount ? "Edit Bank Account" : "Add Bank Account"}
-              </Text>
+              <Text style={styles.modalTitle}>Add Bank Details</Text>
               <TouchableOpacity onPress={() => setShowBankModal(false)}>
                 <Feather name="x" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
+
+            <Text style={styles.inputLabel}>Bank Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Bank name"
+              value={bankForm.bankName}
+              onChangeText={(text) =>
+                setBankForm({ ...bankForm, bankName: text })
+              }
+            />
 
             <Text style={styles.inputLabel}>Account Holder Name</Text>
             <TextInput
@@ -290,13 +303,12 @@ export default function ReferEarnScreen() {
             />
 
             <TouchableOpacity style={styles.saveBtn} onPress={saveBankAccount}>
-              <Text style={styles.saveBtnText}>Save Bank Account</Text>
+              <Text style={styles.saveBtnText}>Submit Bank Details</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Withdrawal Modal */}
       <Modal visible={showWithdrawModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -307,29 +319,31 @@ export default function ReferEarnScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.bankPreview}>
-              <MaterialCommunityIcons name="bank" size={20} color="#EA580C" />
-              <View>
-                <Text style={styles.bankPreviewName}>
-                  {bankAccount?.accountHolderName}
-                </Text>
-                <Text style={styles.bankPreviewNumber}>
-                  {maskBankNumber(bankAccount?.accountNumber)}
-                </Text>
+            {bankAccount && (
+              <View style={styles.bankPreview}>
+                <MaterialCommunityIcons name="bank" size={20} color="#EA580C" />
+                <View>
+                  <Text style={styles.bankPreviewName}>
+                    {bankAccount.accountHolderName}
+                  </Text>
+                  <Text style={styles.bankPreviewNumber}>
+                    {bankAccount.bankName} • {maskBankNumber(bankAccount.accountNumber)}
+                  </Text>
+                </View>
               </View>
-            </View>
+            )}
 
             <Text style={styles.inputLabel}>Enter Amount (₹)</Text>
             <TextInput
               style={[styles.input, styles.amountInput]}
-              placeholder="Min ₹100"
+              placeholder="Min ₹10"
               keyboardType="numeric"
               value={withdrawAmount}
               onChangeText={setWithdrawAmount}
             />
 
             <View style={styles.quickAmounts}>
-              {[100, 500, 1000].map((amt) => (
+              {[10, 50, 100].map((amt) => (
                 <TouchableOpacity
                   key={amt}
                   style={styles.quickAmount}
@@ -343,10 +357,16 @@ export default function ReferEarnScreen() {
             <Text style={styles.balanceInfo}>Available: ₹{totalEarnings}</Text>
 
             <TouchableOpacity
-              style={styles.withdrawSubmitBtn}
+              style={[
+                styles.withdrawSubmitBtn,
+                withdrawing && styles.disabledBtn,
+              ]}
               onPress={handleWithdraw}
+              disabled={withdrawing}
             >
-              <Text style={styles.withdrawSubmitText}>Request Withdrawal</Text>
+              <Text style={styles.withdrawSubmitText}>
+                {withdrawing ? "Processing..." : "Request Withdrawal"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -367,7 +387,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: { color: "#fff", fontSize: 20, fontWeight: "bold" },
   content: { padding: 20, paddingBottom: 40 },
-
   walletCard: {
     backgroundColor: "#fff",
     borderRadius: 20,
@@ -393,7 +412,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   walletSubtext: { color: "#6B7280", fontSize: 14, marginBottom: 20 },
-
   bankInfoBox: {
     backgroundColor: "#F0FDF4",
     padding: 12,
@@ -406,22 +424,6 @@ const styles = StyleSheet.create({
   bankInfoDetails: { flex: 1 },
   bankInfoName: { fontSize: 14, fontWeight: "500", color: "#065F46" },
   bankInfoNumber: { fontSize: 12, color: "#047857", marginTop: 2 },
-
-  addBankBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: 12,
-    backgroundColor: "#FFF7ED",
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#FED7AA",
-    borderStyle: "dashed",
-  },
-  addBankText: { color: "#EA580C", fontSize: 14, fontWeight: "500" },
-
   withdrawBtn: {
     backgroundColor: "#EA580C",
     flexDirection: "row",
@@ -440,7 +442,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
   },
-
   referralCard: {
     backgroundColor: "#FFF7ED",
     borderRadius: 24,
@@ -491,7 +492,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-
   statsRow: { flexDirection: "row", gap: 12, marginTop: 18 },
   statCard: {
     flex: 1,
@@ -502,7 +502,6 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 24, fontWeight: "bold", color: "#EA580C" },
   statLabel: { color: "#78716C", marginTop: 5 },
-
   infoCard: {
     backgroundColor: "#fff",
     borderRadius: 18,
@@ -516,7 +515,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   step: { color: "#374151", marginBottom: 10, lineHeight: 20 },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -551,7 +549,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#F9FAFB",
   },
-
   saveBtn: {
     backgroundColor: "#EA580C",
     paddingVertical: 14,
@@ -561,7 +558,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-
   bankPreview: {
     flexDirection: "row",
     alignItems: "center",

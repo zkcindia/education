@@ -103,3 +103,35 @@ formData.append(
   console.log("VERIFY RESPONSE:", response.data);
   return response.data;
 };
+
+
+export const withdrawPayment = async (data) => {
+  const token = await AsyncStorage.getItem('access');
+
+  console.log("WITHDRAW TOKEN:", token);
+
+  const response = await axios.post(
+    `${API_URL}/withdraw-payment/`,
+    data,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const getWalletBalance = async () => {
+  const token = await AsyncStorage.getItem("access");
+
+  const response = await axios.get(`${API_URL}/cashback-summary/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
