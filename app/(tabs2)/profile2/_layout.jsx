@@ -1,9 +1,13 @@
-import { View, Text } from 'react-native'
-import React from 'react'
-import { Stack } from 'expo-router'
+import { Stack } from "expo-router";
 
-export default function _layout() {
+export default function Profile2Layout() {
   return (
-    <Stack screenOptions={{headerShown:false}} />
-  )
+    <Stack>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="refer-earn" options={{ headerShown: false }} />
+      <Stack.Screen name="my-wallet" options={{ headerShown: false }} />
+      <Stack.Screen name="my-profile" options={{ headerShown: false }} />
+      <Stack.Screen name="change-password" options={{ headerShown: false }} />
+    </Stack>
+  );
 }

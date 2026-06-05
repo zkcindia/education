@@ -135,3 +135,56 @@ export const getWalletBalance = async () => {
 
   return response.data;
 };
+
+
+// Update Bank Details API
+export const updateBankDetails = async (bankData) => {
+  const token = await getToken();
+  
+  console.log("UPDATE BANK DETAILS - Token:", token);
+  console.log("UPDATE BANK DETAILS - Data:", bankData);
+
+  // IMPORTANT: Backend expects 'ifsc' not 'ifsc_code'
+  const payload = {
+    bank_name: bankData.bankName?.trim() || "",
+    account_number: bankData.accountNumber?.trim() || "",
+    ifsc: bankData.ifscCode?.trim().toUpperCase() || "",  // Changed from ifsc_code to ifsc
+    account_holder_name: bankData.accountHolderName?.trim() || "",
+  };
+
+  console.log("UPDATE BANK DETAILS - Payload:", payload);
+
+  const response = await axios.post(
+    `${API_URL}/update-bank-details/`,
+    payload,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  console.log("UPDATE BANK DETAILS - Response:", response.data);
+  return response.data;
+};
+
+// Get Bank Details API
+export const getBankDetails = async () => {
+  const token = await getToken();
+
+  console.log("GET BANK DETAILS - Token:", token);
+
+  const response = await axios.get(
+    `${API_URL}/get-bank-details/`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  console.log("GET BANK DETAILS - Response:", response.data);
+  return response.data;
+};
