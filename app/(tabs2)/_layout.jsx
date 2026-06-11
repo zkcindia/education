@@ -18,9 +18,9 @@ export default function Layout() {
             case 'question':
               iconName = focused ? 'list' : 'list-outline';
               break;
-            case 'inbox2':
-              iconName = focused ? 'mail' : 'mail-outline';
-              break;
+            // case 'inbox2':
+            //   iconName = focused ? 'mail' : 'mail-outline';
+            //   break;
             case 'profile2':
               iconName = focused ? 'person' : 'person-outline';
               break;
@@ -40,7 +40,7 @@ export default function Layout() {
     >
       <Tabs.Screen name='home2' options={{ title: 'HOME' }} />
       <Tabs.Screen name='question' options={{ title: 'QUESTION', headerShown: false }} />
-      {/* <Tabs.Screen name='inbox2' options={{ title: 'INBOX' }} /> */}
+<Tabs.Screen name="inbox2" options={{ href: null }} />
 
       {/* Hide inbox */}
       <Tabs.Screen

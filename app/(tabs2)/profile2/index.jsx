@@ -1,6 +1,17 @@
-import { View, Text, SafeAreaView, Image, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import { useRouter } from 'expo-router'
+import {
+  View,
+  Text,
+  SafeAreaView,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Share,
+} from 'react-native';
+
+import React, { useEffect, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
@@ -8,29 +19,43 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+
 import { COLOR } from '../../../constants/Colors';
 import { getWalletBalance } from '../../../constants/api/apiPayment';
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
 export default function Index() {
-  const router = useRouter();
+  const navigation = useNavigation();
+
   const [teacher, setTeacher] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadTeacherData();
+    loadTeacherProfile();
     loadWalletBalance();
   }, []);
 
-  const loadTeacherData = async () => {
+  const loadTeacherProfile = async () => {
     try {
-      const userData = await AsyncStorage.getItem("userData");
+      const userData = await AsyncStorage.getItem('userData');
+
       if (userData) {
-        const parsed = JSON.parse(userData);
-        setTeacher(parsed);
+        const parsedUser = JSON.parse(userData);
+
+        const response = await axios.get(
+          `${API_URL}/user-data/${parsedUser.id}/`
+        );
+
+        setTeacher(response.data);
       }
     } catch (error) {
-      console.log("Error loading teacher:", error);
+      console.log(
+        'Teacher profile error:',
+        error?.response?.data || error.message
+      );
     } finally {
       setLoading(false);
     }
@@ -39,131 +64,160 @@ export default function Index() {
   const loadWalletBalance = async () => {
     try {
       const data = await getWalletBalance();
-      setWalletBalance(Number(data.current_balance || 0));
+      setWalletBalance(Number(data?.current_balance || 0));
     } catch (error) {
-      console.log("Wallet error:", error);
+      console.log('Wallet error:', error?.response?.data || error.message);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: 'Download Candlelights App: https://backend.candlelights.in/',
+      });
+    } catch (error) {
+      console.log('Share error:', error);
     }
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            await AsyncStorage.removeItem('userData');
-            await AsyncStorage.removeItem('access');
-            await AsyncStorage.removeItem('refresh');
-            router.replace('/screen1');
-          }
-        }
-      ]
-    );
+    await AsyncStorage.removeItem('userData');
+    await AsyncStorage.removeItem('access');
+    await AsyncStorage.removeItem('refresh');
+    navigation.navigate('screen1');
   };
+
+  const profileImage = teacher?.image
+    ? teacher.image.startsWith('http')
+      ? teacher.image
+      : `${API_URL}${teacher.image}`
+    : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <SafeAreaView style={styles.loader}>
         <ActivityIndicator size="large" color={COLOR.background} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      <View style={{ backgroundColor: COLOR.background, padding: 20, paddingTop: 50, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <TouchableOpacity onPress={() => router.back()}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <Feather name="arrow-left" size={24} color={COLOR.white} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/profile2/my-profile')}>
-            <MaterialCommunityIcons name="square-edit-outline" size={24} color={COLOR.white} />
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('screen/myProfileScreen')}
+          >
+            <MaterialCommunityIcons
+              name="square-edit-outline"
+              size={24}
+              color={COLOR.white}
+            />
           </TouchableOpacity>
         </View>
 
-        <View style={{ marginHorizontal: "auto", justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
-          <Image
-            source={{ uri: teacher?.image || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" }}
-            style={{ width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#fff' }}
-          />
-          <View style={{ marginTop: 10, alignItems: 'center' }}>
-            <Text style={{ color: COLOR.white, fontWeight: 'bold', fontSize: 20, textAlign: 'center' }}>
-              {teacher?.full_name || "Teacher Name"}
+        <View style={styles.profileBox}>
+          <Image source={{ uri: profileImage }} style={styles.profileImage} />
+
+          <Text style={styles.name}>
+            {teacher?.name || teacher?.full_name || 'Teacher Name'}
+          </Text>
+
+          <Text style={styles.phone}>
+            {teacher?.mobile || 'No Phone'}
+          </Text>
+
+          <Text style={styles.address}>
+            {teacher?.address || 'No Address'}
+          </Text>
+
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              👨‍🏫 {teacher?.role || 'Teacher'}
             </Text>
-            <Text style={{ color: COLOR.white, textAlign: 'center', marginTop: 4 }}>
-              {teacher?.mobile || "No Phone"}
-            </Text>
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 8 }}>
-              <Text style={{ color: COLOR.white, fontSize: 12, fontWeight: '500' }}>👨‍🏫 Teacher</Text>
-            </View>
           </View>
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={{ padding: 20, gap: 12 }}>
-
-          {/* My Profile */}
-          <TouchableOpacity style={styles.profileCard} onPress={() => router.push('/profile2/my-profile')}>
-            <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
-              <FontAwesome5 name="user-alt" size={22} color={COLOR.background} />
-              <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>My Profile</Text>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.cardContainer}>
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={() => navigation.navigate('screen/myProfileScreen')}
+          >
+            <View style={styles.row}>
+              <FontAwesome5
+                name="user-alt"
+                size={22}
+                color={COLOR.background}
+              />
+              <Text style={styles.cardText}>My Profile</Text>
             </View>
+
             <FontAwesome name="angle-right" size={24} color={COLOR.background} />
           </TouchableOpacity>
 
-          {/* Refer & Earn */}
-          <TouchableOpacity style={styles.profileCard} onPress={() => router.push('/profile2/refer-earn')}>
-            <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
-              <MaterialCommunityIcons name="gift-outline" size={22} color={COLOR.background} />
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={() => navigation.navigate('refer-earn')}
+          >
+            <View style={styles.row}>
+              <MaterialCommunityIcons
+                name="gift-outline"
+                size={22}
+                color={COLOR.background}
+              />
+
               <View>
-                <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Refer & Earn</Text>
-                <Text style={{ fontSize: 12, color: '#EA580C', marginTop: 2 }}>Earn ₹500 per referral</Text>
+                <Text style={styles.cardText}>Refer & Earn</Text>
+                <Text style={styles.subText}>Earn ₹500 per referral</Text>
               </View>
             </View>
+
             <FontAwesome name="angle-right" size={24} color={COLOR.background} />
           </TouchableOpacity>
 
-          {/* My Wallet */}
-          <TouchableOpacity style={styles.profileCard} onPress={() => router.push('/profile2/my-wallet')}>
-            <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
-              <Entypo name="wallet" size={22} color={COLOR.background} />
-              <View>
-                <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>My Wallet</Text>
-                <Text style={{ fontSize: 12, color: '#10B981', marginTop: 2 }}>Balance: ₹{walletBalance}</Text>
-              </View>
-            </View>
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-          </TouchableOpacity>
-
-          {/* Change Password */}
-          <TouchableOpacity style={styles.profileCard} onPress={() => router.push('/profile2/change-password')}>
-            <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
-              <Entypo name="lock" size={22} color={COLOR.background} />
-              <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Change Password</Text>
-            </View>
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-          </TouchableOpacity>
-
-          {/* Share App */}
           <TouchableOpacity style={styles.profileCard}>
-            <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
-              <FontAwesome name="share-alt" size={22} color={COLOR.background} />
-              <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Share App</Text>
+            <View style={styles.row}>
+              <Entypo name="wallet" size={22} color={COLOR.background} />
+
+              <View>
+                <Text style={styles.cardText}>My Wallet</Text>
+                <Text style={styles.walletText}>Balance: ₹{walletBalance}</Text>
+              </View>
             </View>
+
             <FontAwesome name="angle-right" size={24} color={COLOR.background} />
           </TouchableOpacity>
 
-          {/* Logout */}
-          <TouchableOpacity style={styles.profileCard} onPress={handleLogout}>
-            <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
-              <MaterialIcons name="logout" size={22} color={COLOR.background} />
-              <Text style={{ fontSize: 16, color: '#333', fontWeight: '500' }}>Logout</Text>
+          <TouchableOpacity style={styles.profileCard}>
+            <View style={styles.row}>
+              <Entypo name="lock" size={22} color={COLOR.background} />
+              <Text style={styles.cardText}>Change Password</Text>
             </View>
+
+            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.profileCard} onPress={handleShare}>
+            <View style={styles.row}>
+              <FontAwesome name="share-alt" size={22} color={COLOR.background} />
+              <Text style={styles.cardText}>Share App</Text>
+            </View>
+
+            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.profileCard} onPress={handleLogout}>
+            <View style={styles.row}>
+              <MaterialIcons name="logout" size={22} color={COLOR.background} />
+              <Text style={styles.cardText}>Logout</Text>
+            </View>
+
             <FontAwesome name="angle-right" size={24} color={COLOR.background} />
           </TouchableOpacity>
         </View>
@@ -173,6 +227,87 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  header: {
+    backgroundColor: COLOR.background,
+    padding: 20,
+    paddingTop: 50,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  profileBox: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+
+  name: {
+    color: COLOR.white,
+    fontWeight: 'bold',
+    fontSize: 20,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+
+  phone: {
+    color: COLOR.white,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+
+  address: {
+    color: COLOR.white,
+    textAlign: 'center',
+    marginTop: 4,
+    fontSize: 13,
+  },
+
+  badge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+
+  badgeText: {
+    color: COLOR.white,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  scrollView: {
+    flex: 1,
+  },
+
+  cardContainer: {
+    padding: 20,
+    gap: 12,
+  },
+
   profileCard: {
     flexDirection: 'row',
     backgroundColor: COLOR.white,
@@ -180,10 +315,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
     elevation: 2,
-  }
+  },
+
+  row: {
+    flexDirection: 'row',
+    gap: 20,
+    alignItems: 'center',
+  },
+
+  cardText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+
+  subText: {
+    fontSize: 12,
+    color: '#EA580C',
+    marginTop: 2,
+  },
+
+  walletText: {
+    fontSize: 12,
+    color: '#10B981',
+    marginTop: 2,
+  },
 });

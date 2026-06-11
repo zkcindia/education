@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { err } from 'react-native-svg';
-const API_URL = 'http://192.168.29.78:8000';
-// const API_URL = 'https://tapas.bc-pl.com';
+// const API_URL = 'http://192.168.29.78:8000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 
 export const allQuestions = async()=>{

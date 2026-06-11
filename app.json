@@ -35,9 +35,13 @@
       "typedRoutes": true
     },
     "extra": {
+      "router": {
+        "origin": false
+      },
       "eas": {
-        "projectId": "4194535a-ab96-43c6-b65d-6c0308bc4b96"
+        "projectId": "8bcad0ce-fcd3-4867-8b75-3d6818b782d2"
       }
-    }
+    },
+    "owner": "biswajitpattanayak"
   }
 }

@@ -26,7 +26,8 @@ import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
-const API_URL = 'http://192.168.29.78:8000';
+// const API_URL = 'http://192.168.29.78:8000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function Index() {
   const navigation = useNavigation();
