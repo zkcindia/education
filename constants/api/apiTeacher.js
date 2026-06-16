@@ -45,3 +45,23 @@ export const uploadQuestions = async({id,payload})=>{
         throw error
     }
 }
+
+
+// For bulk Excel file upload - renamed to uploadBulkQuestions
+export const uploadBulkQuestions = async ({ id, subject, file }) => {
+  const formData = new FormData();
+
+  formData.append('subject', String(subject));
+
+  formData.append('file', {
+    uri: file.uri,
+    name: file.name || 'questions.xlsx',
+    type: file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  return await axios.post(`${API_URL}/uploadquestion/${id}/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
