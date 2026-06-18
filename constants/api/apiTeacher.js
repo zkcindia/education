@@ -65,3 +65,30 @@ export const uploadBulkQuestions = async ({ id, subject, file }) => {
     },
   });
 };
+
+export const getBoards = async () => {
+    try {
+        const response = await axios.get(`${API_URL}/education-boards/`);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const getClassesByBoard = async (boardName) => {
+    try {
+        const response = await axios.get(`${API_URL}/classes-by-board/?board_name=${boardName}`);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const getSubjects = async (boardName, className) => {
+    try {
+        const response = await axios.get(`${API_URL}/subjects/?board_name=${boardName}&class_name=${className}`);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+}
