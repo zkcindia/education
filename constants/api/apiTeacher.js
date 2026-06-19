@@ -4,12 +4,12 @@ import { err } from 'react-native-svg';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 
-export const allQuestions = async()=>{
+export const getQuestionsBySubject = async (subjectId) => {
     try {
-        const response = await axios.get(`${API_URL}/get_question/1/`);
+        const response = await axios.get(`${API_URL}/get_question/${subjectId}/`);
         return response;
     } catch (error) {
-        throw error
+        throw error;
     }
 }
 // edit questions

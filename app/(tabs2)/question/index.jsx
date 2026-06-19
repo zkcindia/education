@@ -74,7 +74,7 @@ export default function AllClasses() {
     };
 
     // ============================================
-    // 3️⃣ FETCH SUBJECTS (UPDATED)
+    // 3️⃣ FETCH SUBJECTS
     // ============================================
     const fetchSubjects = async (boardName, className) => {
         setLoading(true);
@@ -174,7 +174,6 @@ export default function AllClasses() {
         setSelectedClass(classItem);
         setViewMode('subjects');
         setSearch('');
-        // ✅ Pass board_name and class_name
         fetchSubjects(selectedBoard?.board_name, classItem.name);
     };
 
@@ -340,7 +339,9 @@ export default function AllClasses() {
                             </View>
                             <View>
                                 <Text style={styles.cardTitle}>{item.name}</Text>
-                                <Text style={styles.cardSubtitle}>View Questions</Text>
+                                <Text style={styles.cardSubtitle}>
+                                    {item.id === 1 ? `${questions.length} Questions` : '0 Questions'}
+                                </Text>
                             </View>
                         </View>
                         <FontAwesome6 name="chevron-right" size={16} color="#CCC" />
@@ -379,6 +380,7 @@ export default function AllClasses() {
                         <View style={styles.questionHeader}>
                             <Text style={styles.questionNumber}>Q{index + 1}.</Text>
                             <View style={styles.actions}>
+                                {/* ✅ EDIT BUTTON */}
                                 <TouchableOpacity
                                     style={[styles.actionBtn, styles.editBtn]}
                                     onPress={() => navigation.navigate('screen/questionEditScreen', { 
@@ -390,6 +392,8 @@ export default function AllClasses() {
                                 >
                                     <Feather name="edit-2" size={14} color="#FFF" />
                                 </TouchableOpacity>
+                                
+                                {/* ✅ DELETE BUTTON */}
                                 <TouchableOpacity
                                     style={[styles.actionBtn, styles.deleteBtn]}
                                     onPress={() => handleDelete(item)}
@@ -398,13 +402,16 @@ export default function AllClasses() {
                                 </TouchableOpacity>
                             </View>
                         </View>
+                        
                         <Text style={styles.questionText}>{item.question}</Text>
+                        
                         <View style={styles.options}>
                             <Text style={styles.optionText}>1. {item.option1}</Text>
                             <Text style={styles.optionText}>2. {item.option2}</Text>
                             <Text style={styles.optionText}>3. {item.option3}</Text>
                             <Text style={styles.optionText}>4. {item.option4}</Text>
                         </View>
+                        
                         <View style={styles.correct}>
                             <Text style={styles.correctLabel}>Correct:</Text>
                             <Text style={styles.correctValue}>{item.correct_answer}</Text>
@@ -414,6 +421,12 @@ export default function AllClasses() {
                 ListEmptyComponent={() => (
                     <View style={styles.center}>
                         <Text style={styles.emptyText}>No questions found</Text>
+                        <TouchableOpacity 
+                            style={styles.addQuestionBtn}
+                            onPress={() => navigation.navigate('screen/QuestionUpload')}
+                        >
+                            <Text style={styles.addQuestionBtnText}>+ Add Question</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
             />
@@ -680,6 +693,18 @@ const styles = StyleSheet.create({
         fontFamily: 'roboto-medium',
         fontSize: 13,
         color: '#2E7D32',
+    },
+    addQuestionBtn: {
+        backgroundColor: COLOR.background,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+        marginTop: 15,
+    },
+    addQuestionBtnText: {
+        color: '#FFF',
+        fontFamily: 'roboto-medium',
+        fontSize: 16,
     },
     fab: {
         backgroundColor: COLOR.background,
