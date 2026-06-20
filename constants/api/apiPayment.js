@@ -13,15 +13,43 @@ const getToken = async () => {
 };
 
 export const myPayments = async () => {
-  const token = await getToken();
+  try {
+    const token = await getToken();
+    
+    // Get user data from AsyncStorage
+    const userData = await AsyncStorage.getItem("userData");
+    const parsedUser = userData ? JSON.parse(userData) : null;
+    
+    // Get user ID from stored data
+    let userId = parsedUser?.id;
+    
+    // If userData is not found, try to get from access token or another storage
+    if (!userId) {
+      // Try to get from your stored user object
+      const storedUser = await AsyncStorage.getItem("user");
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        userId = user?.id || user?.user_id;
+      }
+    }
+    
+    console.log("USER ID:", userId); // Debug log
+    
+    if (!userId) {
+      throw new Error("User ID not found. Please login again.");
+    }
 
-  const response = await axios.get(`${API_URL}/my-payments/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+    const response = await axios.get(`${API_URL}/my-payments/${userId}/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching payments:", error);
+    throw error;
+  }
 };
 
 export const getAllPlans = async () => {
