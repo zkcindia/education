@@ -19,8 +19,12 @@ const classBanners = [
     className: "CLASS 6",
     title: "Build Strong Fundamentals",
     subtitle: "CBSE • ICSE • Odisha Board",
-    subjects: ["Maths", "Science", "English", "SST"],
-    features: ["NCERT", "Notes", "Tests"],
+features: [
+  "NCERT Based",
+  "Smart Notes",
+  "Chapter Tests",
+  "Doubt Support"
+],
     icon: "📚",
     colors: ["#4F46E5", "#7C3AED"],
   },
@@ -29,7 +33,7 @@ const classBanners = [
     className: "CLASS 7",
     title: "Learn Beyond Books",
     subtitle: "All subjects in one place",
-    subjects: ["Maths", "Science", "English", "SST"],
+    // subjects: ["Maths", "Science", "English", "SST"],
     features: ["MCQ", "Q&A", "Practice"],
     icon: "📝",
     colors: ["#2563EB", "#06B6D4"],
@@ -39,7 +43,7 @@ const classBanners = [
     className: "CLASS 8",
     title: "Prepare For Higher Classes",
     subtitle: "Strong concepts for future",
-    subjects: ["Maths", "Science", "English", "History"],
+    // subjects: ["Maths", "Science", "English", "History"],
     features: ["Revision", "Mock Test", "Solved Q&A"],
     icon: "🎯",
     colors: ["#10B981", "#14B8A6"],
@@ -49,7 +53,7 @@ const classBanners = [
     className: "CLASS 9",
     title: "Start Board Preparation",
     subtitle: "Concept learning with practice",
-    subjects: ["Physics", "Chemistry", "Biology", "Maths"],
+    // subjects: ["Physics", "Chemistry", "Biology", "Maths"],
     features: ["PYQ", "NCERT", "Doubts"],
     icon: "🚀",
     colors: ["#EC4899", "#8B5CF6"],
@@ -59,7 +63,7 @@ const classBanners = [
     className: "CLASS 10",
     title: "Ace Your Boards",
     subtitle: "Board exam ready learning",
-    subjects: ["Science", "Maths", "SST", "English"],
+    // subjects: ["Science", "Maths", "SST", "English"],
     features: ["Sample Paper", "Full Test", "Board Qs"],
     icon: "🏆",
     colors: ["#F97316", "#EF4444"],
@@ -118,21 +122,26 @@ export default function ClassBannerSlider() {
             </View>
           </View>
 
-          <View style={styles.chipWrap}>
+          {/* <View style={styles.chipWrap}>
             {item.subjects.map((subject, index) => (
               <View key={index} style={styles.chip}>
                 <Text style={styles.chipText}>{subject}</Text>
               </View>
             ))}
-          </View>
+          </View> */}
 
-          <View style={styles.featureRow}>
-            {item.features.map((feature, index) => (
-              <View key={index} style={styles.featureItem}>
-                <Text style={styles.featureText}>✓ {feature}</Text>
-              </View>
-            ))}
-          </View>
+<View style={styles.featureContainer}>
+  {item.features.map((feature,index)=>(
+    <View
+      key={index}
+      style={styles.featureBox}
+    >
+      <Text style={styles.featureText}>
+        ✨ {feature}
+      </Text>
+    </View>
+  ))}
+</View>
         </LinearGradient>
       </View>
     );

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, TextInput, Button, Text, FlatList, 
+import {
+  View, TextInput, Button, Text, FlatList,
   TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Platform
 } from 'react-native';
 import { COLOR } from '../../constants/Colors';
 import Modal from 'react-native-modal';
 import RNPickerSelect from 'react-native-picker-select';
 import { allClassFetch, fetchSubject } from '../../constants/api/apiHome';
-import { uploadQuestions, uploadBulkQuestions } from '../../constants/api/apiTeacher';
+import { uploadQuestions, uploadBulkQuestions, getBoards, getClassesByBoard, getSubjects } from '../../constants/api/apiTeacher';
 import { useToast } from 'react-native-toast-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -29,6 +29,11 @@ const QuestionUpload = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileUploadProgress, setFileUploadProgress] = useState(0);
   
+  // ✅ NEW STATES FOR BOARD
+  const [boards, setBoards] = useState([]);
+  const [selectedBoard, setSelectedBoard] = useState(null);
+  const [boardLoading, setBoardLoading] = useState(false);
+
   const [questionData, setQuestionData] = useState({
     question: '',
     option1: '',
@@ -42,7 +47,46 @@ const QuestionUpload = () => {
   useEffect(() => {
     openBottomSheet();
     getClasses();
+    fetchBoards(); // ✅ Fetch boards on load
   }, []);
+
+  // ✅ FETCH BOARDS
+  const fetchBoards = async () => {
+    setBoardLoading(true);
+    try {
+      const response = await getBoards();
+      if (response.data?.status === true) {
+        setBoards(response.data.data || []);
+      }
+    } catch (error) {
+      console.log('Error fetching boards:', error);
+    }
+    setBoardLoading(false);
+  };
+
+  // ✅ FETCH CLASSES BY BOARD (NEW)
+  const fetchClassesByBoard = async (boardName) => {
+    try {
+      const response = await getClassesByBoard(boardName);
+      if (response.data?.status === true) {
+        setClassData(response.data.data || []);
+      }
+    } catch (error) {
+      console.log('Error fetching classes by board:', error);
+    }
+  };
+
+  // ✅ FETCH SUBJECTS BY BOARD & CLASS (NEW)
+  const fetchSubjectsByBoardClass = async (boardName, className) => {
+    try {
+      const response = await getSubjects(boardName, className);
+      if (response.data?.status === true) {
+        setSubjectData(response.data.data || []);
+      }
+    } catch (error) {
+      console.log('Error fetching subjects:', error);
+    }
+  };
 
   const getClasses = async () => {
     try {
@@ -67,9 +111,37 @@ const QuestionUpload = () => {
     }
   };
 
+  // ✅ HANDLE BOARD SELECTION
+  const handleBoardSelection = (boardId) => {
+    const board = boards.find(b => b.id === boardId);
+    setSelectedBoard(board);
+    setSelectedClass(null);
+    setSelectedSubject(null);
+    setClassData([]);
+    setSubjectData([]);
+    if (board) {
+      fetchClassesByBoard(board.board_name);
+    }
+  };
+
+  // ✅ HANDLE CLASS SELECTION (UPDATED)
   const handleClassSelection = (classId) => {
-    setSelectedClass(classId);
-    getSubjectsByClass(classId);
+    const classItem = classData.find(c => c.id === classId);
+    setSelectedClass(classItem);
+    setSelectedSubject(null);
+    setSubjectData([]);
+    if (selectedBoard && classItem) {
+      fetchSubjectsByBoardClass(selectedBoard.board_name, classItem.name);
+    }
+  };
+
+  // ✅ HANDLE SUBJECT SELECTION
+  const handleSubjectSelection = (subjectId) => {
+    setSelectedSubject(subjectId);
+    setQuestionData((prev) => ({
+      ...prev,
+      subject: subjectId,
+    }));
   };
 
   const handleInputChange = (field, value) => {
@@ -401,36 +473,44 @@ const QuestionUpload = () => {
 
   const openBottomSheet = () => {
     setModalVisible(true);
+    fetchBoards(); // ✅ Refresh boards on open
   };
 
   const closeBottomSheet = () => {
     setModalVisible(false);
   };
 
+  // ✅ UPDATED CONFIRM SELECTION
   const handleConfirmSelection = () => {
-    if (selectedClass && selectedSubject) {
+    if (selectedBoard && selectedClass && selectedSubject) {
       setQuestionData((prev) => ({
         ...prev,
         subject: selectedSubject,
       }));
       closeBottomSheet();
-      toast.show('Class and subject selected', {
+      toast.show(`Selected: ${selectedBoard.board_name} → ${selectedClass.name} → ${selectedSubject.name}`, {
         type: 'success',
         duration: 1500,
         animationType: 'zoom-in',
         placement: 'top',
       });
     } else {
-      Alert.alert('Please select both class and subject');
+      Alert.alert('Please select Board, Class and Subject');
     }
   };
 
-  const classes = classData.map((item) => ({
+  // ✅ MAP DATA FOR PICKER
+  const boardItems = boards.map((item) => ({
+    label: item.board_name,
+    value: item.id,
+  }));
+
+  const classItems = classData.map((item) => ({
     label: item.name,
     value: item.id,
   }));
 
-  const subjects = subjectData.map((item) => ({
+  const subjectItems = subjectData.map((item) => ({
     label: item.name,
     value: item.id,
   }));
@@ -439,11 +519,11 @@ const QuestionUpload = () => {
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Upload Questions</Text>
 
-      {/* Current Selection Status */}
-      {selectedSubject && (
+      {/* ✅ UPDATED Selection Status - Shows Board → Class → Subject */}
+      {selectedSubject && selectedClass && selectedBoard && (
         <View style={styles.selectionStatus}>
           <Text style={styles.selectionText}>
-            Selected Subject: {subjectData.find(s => s.id === selectedSubject)?.name || 'Loading...'}
+            📚 {selectedBoard?.board_name} → 📖 {selectedClass?.name} → 📝 {subjectData.find(s => s.id === selectedSubject)?.name || 'Loading...'}
           </Text>
           <TouchableOpacity onPress={openBottomSheet} style={styles.changeButton}>
             <Text style={styles.changeButtonText}>Change</Text>
@@ -587,35 +667,57 @@ const QuestionUpload = () => {
         </Text>
       </TouchableOpacity>
 
-      {/* Modal for Class & Subject Selection */}
+      {/* ✅ UPDATED Modal - Board → Class → Subject */}
       <Modal isVisible={isModalVisible} onBackdropPress={closeBottomSheet}>
         <View style={styles.bottomSheet}>
-          <Text style={styles.modalHeader}>Select Class & Subject</Text>
+          <Text style={styles.modalHeader}>Select Board → Class → Subject</Text>
 
-          <Text style={styles.label}>Class</Text>
+          {/* 1️⃣ BOARD */}
+          <Text style={styles.label}>Board</Text>
           <RNPickerSelect
-            onValueChange={(value) => handleClassSelection(value)}
-            items={classes}
-            placeholder={{ label: 'Select Class', value: null }}
+            onValueChange={(value) => handleBoardSelection(value)}
+            items={boardItems}
+            placeholder={{ label: 'Select Board', value: null }}
             style={pickerSelectStyles}
-            disabled={isLoading}
+            disabled={isLoading || boardLoading}
           />
 
-          <Text style={styles.label}>Subject</Text>
-          <RNPickerSelect
-            onValueChange={(value) => setSelectedSubject(value)}
-            items={subjects}
-            placeholder={{ label: 'Select Subject', value: null }}
-            style={pickerSelectStyles}
-            disabled={isLoading}
-          />
+          {/* 2️⃣ CLASS - Only show when board selected */}
+          {selectedBoard && (
+            <>
+              <Text style={styles.label}>Class</Text>
+              <RNPickerSelect
+                onValueChange={(value) => handleClassSelection(value)}
+                items={classItems}
+                placeholder={{ label: 'Select Class', value: null }}
+                style={pickerSelectStyles}
+                disabled={isLoading}
+              />
+            </>
+          )}
+
+          {/* 3️⃣ SUBJECT - Only show when class selected */}
+          {selectedClass && (
+            <>
+              <Text style={styles.label}>Subject</Text>
+              <RNPickerSelect
+                onValueChange={(value) => handleSubjectSelection(value)}
+                items={subjectItems}
+                placeholder={{ label: 'Select Subject', value: null }}
+                style={pickerSelectStyles}
+                disabled={isLoading}
+              />
+            </>
+          )}
 
           <TouchableOpacity 
-            style={styles.confirmButton} 
+            style={[styles.confirmButton, !selectedSubject && styles.disabledButton]} 
             onPress={handleConfirmSelection}
-            disabled={isLoading}
+            disabled={!selectedSubject || isLoading}
           >
-            <Text style={styles.confirmButtonText}>Confirm Selection</Text>
+            <Text style={styles.confirmButtonText}>
+              {selectedSubject ? '✅ Confirm Selection' : 'Select All'}
+            </Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -646,7 +748,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   selectionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#2E7D32',
     fontWeight: '500',
     flex: 1,
@@ -832,7 +934,9 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     color: '#555',
-    marginBottom: 10,
+    marginBottom: 8,
+    marginTop: 10,
+    fontWeight: '500',
   },
   bottomSheet: {
     backgroundColor: '#FFF',
@@ -844,6 +948,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
   },
   confirmButton: {
     backgroundColor: '#007BFF',

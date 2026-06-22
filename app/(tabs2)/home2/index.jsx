@@ -8,6 +8,7 @@ import PopularCourse from '../../../components/home/PopularCourse'
 import TopMentor from '../../../components/home/TopMentor'
 import FeaturedCourse from '../../../components/home/featuredCourse'
 import Sloka from '../../../components/home/Sloka'
+import ClassBannerPage from '../../../components/home/ClassBannerPage'
 import { router } from 'expo-router'
 
 const { width, height } = Dimensions.get('window')
@@ -70,7 +71,7 @@ export default function Index() {
         </View>
 
         {/* Stats */}
-        <View style={styles.statsContainer}>
+        {/* <View style={styles.statsContainer}>
           <View style={styles.earningContainer}>
             <Image
               source={{
@@ -106,14 +107,15 @@ export default function Index() {
               </Text>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Existing Components */}
         <Banner />
         <Sloka />
         <PopularCourse />
-        <Banner />
-        <FeaturedCourse />
+        {/* <Banner /> */}
+        <ClassBannerPage />
+        {/* <FeaturedCourse /> */}
         <TopMentor />
         <Banner />
       </ScrollView>
