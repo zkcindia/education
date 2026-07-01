@@ -1,91 +1,146 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Button, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLOR } from '../../constants/Colors';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { submitQuiz } from '../../constants/api/apiScore';
-import { captureRef } from 'react-native-view-shot'; // To capture the screen
-import * as Sharing from 'expo-sharing'; 
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 
 export default function ResultScreen() {
   const navigation = useNavigation();
   const router = useRoute();
-  const { score, subject, teacherId, teacherName } = router.params;
-  const [user, setUser] = useState({});
-  const viewRef = useRef(); 
+  
+  // ✅ Debug: Check all params
+  console.log('========== RESULT SCREEN PARAMS ==========');
+  console.log('All params:', router.params);
+  console.log('===========================================');
+  
+  const { score, subject, teacherId, teacherName } = router.params || {};
+  
+  // ✅ Emergency fix: If subject is undefined, try to get from route
+  const finalSubjectId = subject || router.params?.subjectId || 1;
+  
+  console.log('📤 Final Subject ID:', finalSubjectId);
+  
+  const [user, setUser] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+  const viewRef = useRef();
 
   useEffect(() => {
-    getUserData();
-    if (user) {
-      submitScore();
+    if (!finalSubjectId) {
+      Alert.alert('Error', 'Subject ID is missing. Please try again.');
+      return;
     }
+    loadUserAndSubmit();
   }, []);
 
-  const getUserData = async () => {
+  const loadUserAndSubmit = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
-      if (userData !== null) {
-        console.log(userData);
-        setUser(JSON.parse(userData)); // Convert string back to JSON
+      console.log('📦 UserData:', userData);
+      
+      if (!userData) {
+        Alert.alert('Error', 'Please login to save your score.');
+        return;
       }
+
+      const parsedUser = JSON.parse(userData);
+      console.log('👤 User ID:', parsedUser.id);
+      
+      setUser(parsedUser);
+      
+      if (parsedUser.id && finalSubjectId) {
+        await submitUserScore(parsedUser.id, finalSubjectId);
+      }
+      
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.log('❌ Error:', error);
     }
   };
 
-  const submitScore = async () => {
+  const submitUserScore = async (userId, subId) => {
+    if (submitted) return;
+    
+    console.log('========== SUBMITTING SCORE ==========');
+    console.log('📤 User ID:', userId);
+    console.log('📤 Subject ID:', subId);
+    console.log('📤 Score:', score);
+    console.log('=======================================');
+    
     try {
-      const response = await submitQuiz({ userId: user.id, subjectId: subject, score: score });
-      console.log(response);
+      const response = await submitQuiz({
+        userId: userId,
+        subjectId: subId,
+        score: Number(score) || 0,
+      });
+
+      console.log('✅ Success:', response.data);
+      setSubmitted(true);
+      
     } catch (error) {
-      console.log(error);
+      console.log('❌ Error:', error.response?.data || error.message);
+      
+      let errorMsg = 'Failed to submit score.';
+      if (error.response?.data?.error) {
+        errorMsg = error.response.data.error;
+      }
+      
+      Alert.alert('Error', errorMsg, [{ text: 'OK' }]);
     }
   };
 
-  // Function to capture the screenshot and share it
   const shareResults = async () => {
     try {
       const uri = await captureRef(viewRef, {
         format: 'png',
         quality: 0.8,
       });
-      console.log('Image saved to', uri);
-
-      // Share the image
       await Sharing.shareAsync(uri);
     } catch (error) {
-      console.error('Error capturing screenshot:', error);
+      console.error('Error sharing:', error);
     }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container} ref={viewRef}>
       <Text style={styles.title}>Quiz Result!</Text>
-      <Image source={{ uri: 'https://w7.pngwing.com/pngs/10/33/png-transparent-winner-medal-illustration-gold-medal-trophy-christmas-trophy-s-emblem-medal-logo.png' }} style={styles.image} />
+      <Image 
+        source={{ uri: 'https://w7.pngwing.com/pngs/10/33/png-transparent-winner-medal-illustration-gold-medal-trophy-christmas-trophy-s-emblem-medal-logo.png' }} 
+        style={styles.image} 
+      />
+      
       <View style={styles.resultContainer}>
         <Text style={styles.congratulationsText}>Congratulations!</Text>
-        <Text style={styles.congratulationsMessage}>Dear user, you have completed your quiz and you have earned some coins. You can convert it to real money.</Text>
+        <Text style={styles.congratulationsMessage}>
+          You have completed your quiz and earned {score || 0} coins!
+        </Text>
         
         <View style={styles.scoreContainer}>
           <Text style={styles.label}>YOUR SCORE</Text>
-          <Text style={styles.score}>{score || '0'}</Text>
+          <Text style={styles.score}>{score || 0}</Text>
         </View>
         
         <View style={styles.coinsContainer}>
           <Text style={styles.label}>EARNED COINS</Text>
           <View style={styles.coinRow}>
-            <Image source={{ uri: 'https://www.vhv.rs/dpng/d/141-1411128_coin-vector-png-transparent-coin-vector-png-png.png' }} style={styles.coinImage} />
-            <Text style={styles.score}>{score}</Text>
+            <Image 
+              source={{ uri: 'https://www.vhv.rs/dpng/d/141-1411128_coin-vector-png-transparent-coin-vector-png-png.png' }} 
+              style={styles.coinImage} 
+            />
+            <Text style={styles.score}>{score || 0}</Text>
           </View>
         </View>
         
-        <View style={styles.teacherContainer}>
-          <Text style={styles.teacherName}>{teacherName}</Text>
-          <TouchableOpacity style={styles.chatButton}>
-            <Text style={styles.chatButtonText}>Chat with teacher</Text>
-          </TouchableOpacity>
-        </View>
+        {teacherName && (
+          <View style={styles.teacherContainer}>
+            <Text style={styles.teacherName}>{teacherName}</Text>
+            <TouchableOpacity style={styles.chatButton}>
+              <Text style={styles.chatButtonText}>Chat with teacher</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
       
       <View style={styles.buttonContainer}>
@@ -94,7 +149,10 @@ export default function ResultScreen() {
           <Text style={styles.buttonText}>Share Results</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={[styles.button, styles.homeButton]} onPress={() => navigation.navigate('(drawer)')}>
+        <TouchableOpacity 
+          style={[styles.button, styles.homeButton]} 
+          onPress={() => navigation.navigate('(drawer)')}
+        >
           <Text style={[styles.buttonText, styles.homeButtonText]}>Go To Home</Text>
         </TouchableOpacity>
       </View>
@@ -103,12 +161,24 @@ export default function ResultScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, alignItems: 'center', padding: 20, paddingTop: 30 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  container: { 
+    flexGrow: 1, 
+    alignItems: 'center', 
+    padding: 20, 
+    paddingTop: 30,
+    backgroundColor: '#f5f5f5',
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginBottom: 20,
+    color: COLOR.background,
+  },
   image: {
     height: 150,
     width: 100,
     marginBottom: 20,
+    resizeMode: 'contain',
   },
   resultContainer: {
     justifyContent: 'center',
@@ -119,6 +189,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingBottom: 20,
     borderRadius: 10,
+    width: '100%',
   },
   congratulationsText: {
     fontFamily: 'roboto-bold',
@@ -131,9 +202,11 @@ const styles = StyleSheet.create({
     fontFamily: 'roboto-medium',
     fontSize: 15,
     textAlign: 'center',
+    color: '#666',
   },
   scoreContainer: {
     gap: 10,
+    alignItems: 'center',
   },
   label: {
     fontFamily: 'roboto-medium',
@@ -148,16 +221,17 @@ const styles = StyleSheet.create({
   },
   coinsContainer: {
     gap: 10,
+    alignItems: 'center',
   },
   coinRow: {
     flexDirection: 'row',
     gap: 20,
     alignItems: 'center',
-    marginHorizontal: 'auto',
   },
   coinImage: {
     width: 40,
     height: 40,
+    resizeMode: 'contain',
   },
   teacherContainer: {
     flexDirection: 'row',
@@ -165,31 +239,38 @@ const styles = StyleSheet.create({
     gap: 20,
     marginTop: 10,
     alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 10,
   },
   teacherName: {
     fontSize: 16,
     fontWeight: '700',
+    color: COLOR.background,
   },
   chatButton: {
     backgroundColor: COLOR.background,
-    padding: 5,
+    padding: 8,
     borderRadius: 5,
   },
   chatButtonText: {
     color: COLOR.white,
+    fontFamily: 'roboto-medium',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 20,
     marginTop: 30,
+    width: '100%',
   },
   button: {
-    padding: 10,
+    padding: 12,
     borderRadius: 10,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   shareButton: {
     backgroundColor: COLOR.white,
@@ -202,6 +283,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 15,
     fontFamily: 'roboto-medium',
+    marginLeft: 8,
   },
   homeButtonText: {
     color: COLOR.white,

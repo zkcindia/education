@@ -1,80 +1,88 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions,ScrollView  } from 'react-native';
-import { RadioButton } from 'react-native-paper'; // Assuming you're using react-native-paper for RadioButton
-import { AnimatedCircularProgress } from 'react-native-circular-progress'; // For circular timer
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  ScrollView,
+} from 'react-native';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { fetchQuiz } from '../../constants/api/apiHome';
 import { COLOR } from '../../constants/Colors';
 
-const { width, height } = Dimensions.get('window'); // Get screen dimensions
+const { width, height } = Dimensions.get('window');
 
 const QuizScreen = () => {
   const navigation = useNavigation();
+  const router = useRoute();
+
+  const { id } = router.params || {};
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timer, setTimer] = useState(30); // 30 second timer
-  const router = useRoute();
-  const { id } = router.params || {}; // Get subject ID from route
+  const [timer, setTimer] = useState(30);
 
-  console.log(id);
-
-  // Fetch quiz questions from API when component mounts
   useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        const response = await fetchQuiz(id);
-        setQuestions(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error(error);
-        setLoading(false);
-      }
-    };
     fetchQuestions();
   }, [id]);
 
-  // Timer effect
+  const fetchQuestions = async () => {
+    try {
+      const response = await fetchQuiz(id);
+      setQuestions(response.data || []);
+    } catch (error) {
+      console.log('QUIZ ERROR:', error?.response?.data || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
+    if (loading || questions.length === 0) return;
+
     if (timer > 0) {
       const intervalId = setInterval(() => {
-        setTimer((prevTimer) => prevTimer - 1);
+        setTimer(prevTimer => prevTimer - 1);
       }, 1000);
+
       return () => clearInterval(intervalId);
     } else {
-      handleAnswer(); // Auto-submit when timer ends
+      handleAnswer();
     }
-  }, [timer]);
+  }, [timer, loading, questions]);
 
-  // Handle user's selected answer and move to the next question
   const handleAnswer = () => {
-    if (selectedAnswer === null) {
-      // No answer selected, move to the next question without incrementing the score
-    } else if (selectedAnswer === questions[currentQuestionIndex].correct_answer) {
-      // Increment score if the answer is correct
-      setScore((prevScore) => prevScore + 1);
+    const currentQuestion = questions[currentQuestionIndex];
+
+    const isCorrect =
+      selectedAnswer !== null &&
+      selectedAnswer === currentQuestion.correct_answer;
+
+    const finalScore = score + (isCorrect ? 1 : 0);
+
+    if (isCorrect) {
+      setScore(prevScore => prevScore + 1);
     }
 
-    // Reset timer and selected answer
     setTimer(30);
     setSelectedAnswer(null);
 
-    // Move to the next question or navigate to result screen
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      // Use the latest score after state update
-      setTimeout(() => {
-        navigation.navigate('screen/resultScreen', {
-          score: score + (selectedAnswer === questions[currentQuestionIndex].correct_answer ? 1 : 0),
-          totalQuestions: questions.length,
-          subject: id,
-          teacherId: questions[0].teacher,
-          teacherName: questions[0].teacher_name,
-        });
-      }, 500); // Delay to ensure score is updated
+      // ✅ Fix: Send subject as "subject" not "subjectId"
+      navigation.navigate('screen/resultScreen', {
+        score: finalScore,
+        totalQuestions: questions.length,
+        subject: id,  // ✅ Ye sahi hai - "subject" naam se bhej rahe hain
+        teacherId: questions[0]?.teacher,
+        teacherName: questions[0]?.teacher_name,
+      });
     }
   };
 
@@ -82,55 +90,74 @@ const QuizScreen = () => {
     return <Text style={styles.loadingText}>Loading...</Text>;
   }
 
+  if (!questions.length) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>No quiz found for this subject</Text>
+      </View>
+    );
+  }
+
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Display question number */}
       <Text style={styles.questionText}>
         Question {currentQuestionIndex + 1} / {questions.length}
       </Text>
 
-      {/* Circular timer */}
       <View style={styles.timerContainer}>
         <AnimatedCircularProgress
           size={100}
           width={10}
-          fill={(timer / 30) * 100} // Progress based on timer
+          fill={(timer / 30) * 100}
           tintColor={COLOR.background}
           backgroundColor="#d9f7f4"
           style={styles.timer}
         >
-          {() => (
-            <Text style={styles.timerText}>{timer}</Text>
-          )}
+          {() => <Text style={styles.timerText}>{timer}</Text>}
         </AnimatedCircularProgress>
-        
-        {/* Display current question */}
+
         <Text style={styles.question}>{currentQuestion.question}</Text>
       </View>
 
-      {/* Options with TouchableOpacity for background change on selection */}
       <View style={styles.optionsContainer}>
-        {[currentQuestion.option1, currentQuestion.option2, currentQuestion.option3, currentQuestion.option4].map(
-          (option, index) => (
-            <TouchableOpacity
-              key={index}
+        {[
+          currentQuestion.option1,
+          currentQuestion.option2,
+          currentQuestion.option3,
+          currentQuestion.option4,
+        ].map((option, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.option,
+              selectedAnswer === option && {
+                backgroundColor: COLOR.background,
+              },
+            ]}
+            onPress={() => setSelectedAnswer(option)}
+          >
+            <Text
               style={[
-                styles.option,
-                selectedAnswer === option && { backgroundColor: COLOR.background } // Change background if selected
+                styles.optionText,
+                selectedAnswer === option && {
+                  color: COLOR.white,
+                },
               ]}
-              onPress={() => setSelectedAnswer(option)}
             >
-              <Text style={[selectedAnswer === option && { color: COLOR.white }, styles.optionText]}>{option}</Text>
-            </TouchableOpacity>
-          )
-        )}
+              {option}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      <TouchableOpacity 
-        style={styles.submitButton} 
-        onPress={handleAnswer} 
+      <TouchableOpacity
+        style={[
+          styles.submitButton,
+          !selectedAnswer && styles.disabledButton,
+        ]}
+        onPress={handleAnswer}
         disabled={!selectedAnswer}
       >
         <Text style={styles.submitButtonText}>SUBMIT ANSWER</Text>
@@ -140,20 +167,39 @@ const QuizScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flexGrow: 1, 
-    padding: 20 
+  container: {
+    flexGrow: 1,
+    padding: 20,
   },
-  questionText: { 
-    fontSize: 18, 
-    textAlign: 'center', 
-    marginBottom: 10, 
-    fontWeight: 'bold' 
+
+  loadingText: {
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 18,
   },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  emptyText: {
+    fontSize: 18,
+    fontFamily: 'roboto-medium',
+  },
+
+  questionText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+    fontWeight: 'bold',
+  },
+
   timerContainer: {
-    backgroundColor: '#fff', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 20,
     shadowColor: '#000',
     marginTop: 80,
@@ -162,40 +208,51 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     borderRadius: 5,
-    minHeight: 200 
+    minHeight: 200,
   },
-  timerText: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    color: COLOR.background 
+
+  timerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLOR.background,
   },
-  question: { 
-    fontSize: 18, 
-    textAlign: 'center', 
-    marginBottom: 20, 
-    marginTop: 10 
+
+  question: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 20,
+    marginTop: 10,
   },
-  optionsContainer: { 
-    marginTop: 20 
+
+  optionsContainer: {
+    marginTop: 20,
   },
+
   option: {
     padding: 15,
     marginVertical: 5,
     borderRadius: 8,
-    backgroundColor: COLOR.white, // Default option background color
+    backgroundColor: COLOR.white,
     borderWidth: 1,
     borderColor: '#ccc',
   },
+
   optionText: {
     fontFamily: 'roboto-medium',
     fontSize: 16,
   },
+
   submitButton: {
     backgroundColor: COLOR.background,
     borderRadius: 10,
     padding: 10,
     marginTop: 30,
   },
+
+  disabledButton: {
+    opacity: 0.5,
+  },
+
   submitButtonText: {
     color: COLOR.white,
     fontSize: 17,

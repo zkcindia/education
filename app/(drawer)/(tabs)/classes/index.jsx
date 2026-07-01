@@ -1,87 +1,145 @@
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, TextInput, FlatList, Image, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  SafeAreaView,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  Image,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
+
 import React, { useCallback, useState } from 'react';
 import { useNavigation } from 'expo-router';
 import { COLOR } from './../../../../constants/Colors';
 import { Feather } from '@expo/vector-icons';
-import { allClassFetch } from '../../../../constants/api/apiHome';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchBoardClassSubjects } from '../../../../constants/api/apiTeacher';
 
 const { width, height } = Dimensions.get('window');
 
 export default function Index() {
   const navigation = useNavigation();
-  const [allClass, setAllClass] = useState([]);
-  const [search, setSearch] = useState('');
+
+  const [userData, setUserData] = useState(null);
+  const [subjects, setSubjects] = useState([]);
   const [loader, setLoader] = useState(false);
-  const [searchVisible, setSearchVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      fetchClasses();
+      loadUserData();
     }, [])
   );
 
-  const fetchClasses = async () => {
-    setLoader(true);
+  const loadUserData = async () => {
     try {
-      const response = await allClassFetch(search);
-      if (response.status === 200) {
-        setAllClass(response.data);
+      const data = await AsyncStorage.getItem('userData');
+
+      if (data) {
+        const parsedData = JSON.parse(data);
+        setUserData(parsedData);
+        // Automatically fetch subjects when user data is loaded
+        fetchSubjects(parsedData);
       }
     } catch (error) {
-      console.log(error);
+      console.log('USER DATA ERROR:', error);
     }
+  };
+
+  const fetchSubjects = async (userData) => {
+    setLoader(true);
+
+    try {
+      const response = await fetchBoardClassSubjects();
+
+      if (response.status === 200) {
+        setSubjects(response.data?.data || []);
+      }
+    } catch (error) {
+      console.log('SUBJECT ERROR:', error?.response?.data || error.message);
+    }
+
     setLoader(false);
   };
 
+  const handleSubjectPress = (item) => {
+    navigation.navigate('screen/instructionsScreen', {
+      id: item.id,
+    });
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={24} color={COLOR.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Classes</Text>
-        <TouchableOpacity onPress={() => setSearchVisible(!searchVisible)}>
-          <Feather name="search" size={24} color={COLOR.white} />
-        </TouchableOpacity>
+        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>My Subjects</Text>
+        <View style={{ width: 24 }} />
       </View>
-      {searchVisible && (
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={20} color="#969191" />
-          <TextInput
-            placeholder="Search Course Here..."
-            style={styles.searchInput}
-            onChangeText={setSearch}
-          />
-        </View>
-      )}
-      <View style={styles.listContainer}>
-        <Text style={styles.courseTitle}>Class List</Text>
-        <FlatList
-          data={allClass}
-          showsVerticalScrollIndicator={false}
-          onRefresh={fetchClasses}
-          refreshing={loader}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.classCard}
-              onPress={() => navigation.navigate('screen/subjectScreen', { id: item.id })}
-            >
-              <Image source={{ uri: item.image }} style={styles.classImage} />
-              <View style={styles.classInfo}>
-                <Text style={styles.className}>{item?.name}</Text>
-                <Text style={styles.classSubjects}>Subject: {item?.subjects_count}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          style={{ marginTop: 15 }}
-        />
+
+      <View style={styles.body}>
+        {loader ? (
+          <View style={styles.loaderBox}>
+            <ActivityIndicator size="large" color={COLOR.background} />
+            <Text style={styles.loadingText}>Loading subjects...</Text>
+          </View>
+        ) : (
+          <>
+            {userData && (
+              <Text style={styles.title}>
+                {userData?.Education_board} - {userData?.class}
+              </Text>
+            )}
+
+            <FlatList
+              data={subjects}
+              keyExtractor={(item) => item.id.toString()}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>No subjects found</Text>
+              }
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.subjectCard}
+                  onPress={() => handleSubjectPress(item)}
+                >
+                  <Image
+                    source={{ uri: item.image || item.image_url }}
+                    style={styles.subjectImage}
+                  />
+
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle}>{item.name}</Text>
+
+                    <Text style={styles.cardSub}>
+                      {item?.quiz_count
+                        ? `${item.quiz_count} Questions`
+                        : 'Start Test'}
+                    </Text>
+                  </View>
+
+                  <Feather
+                    name="chevron-right"
+                    size={24}
+                    color={COLOR.background}
+                  />
+                </TouchableOpacity>
+              )}
+            />
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f7f8fa',
+  },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -90,59 +148,75 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: height * 0.05,
   },
+
   headerTitle: {
-    fontSize: width * 0.045,
+    fontSize: width * 0.05,
     color: COLOR.white,
+    fontFamily: 'roboto-bold',
   },
-  searchContainer: {
+
+  body: {
+    flex: 1,
+    padding: 18,
+  },
+
+  title: {
+    fontSize: width * 0.05,
+    fontFamily: 'roboto-bold',
+    color: COLOR.background,
+    marginBottom: 15,
+  },
+
+  subjectCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: "#DDD",
-    padding: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginVertical: 20,
-    marginHorizontal: 20,
+    backgroundColor: COLOR.white,
+    padding: 14,
+    borderRadius: 15,
+    elevation: 2,
+    marginBottom: 12,
   },
-  searchInput: {
-    fontFamily: 'roboto',
-    fontSize: width * 0.04,
-    width: '85%',
+
+  subjectImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 12,
+    marginRight: 15,
+    resizeMode: 'cover',
   },
-  listContainer: {
-    marginHorizontal: 15,
-  },
-  courseTitle: {
-    fontFamily: 'roboto-medium',
-    fontSize: width * 0.05,
-  },
-  classCard: {
-    flexDirection: 'row',
-    gap: 10,
-    marginVertical: 10,
-    shadowColor: '#000',
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    padding: width * 0.03,
-  },
-  classImage: {
-    width: width * 0.25,
-    height: height * 0.12,
-  },
-  classInfo: {
+
+  cardInfo: {
     flex: 1,
-    justifyContent: 'center',
   },
-  className: {
-    fontFamily: 'roboto-medium',
+
+  cardTitle: {
     fontSize: width * 0.045,
+    fontFamily: 'roboto-bold',
     color: COLOR.background,
   },
-  classSubjects: {
+
+  cardSub: {
+    fontSize: width * 0.035,
     fontFamily: 'roboto',
-    fontSize: width * 0.04,
+    color: '#666',
+    marginTop: 4,
+  },
+
+  loaderBox: {
+    marginTop: 50,
+    alignItems: 'center',
+  },
+
+  loadingText: {
+    marginTop: 10,
+    fontFamily: 'roboto',
+  },
+
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 16,
+    fontFamily: 'roboto-medium',
+    color: '#777',
   },
 });
-

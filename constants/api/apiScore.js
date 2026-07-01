@@ -10,3 +10,5 @@ export const submitQuiz = async({userId,subjectId,score})=>{
         throw error
     }
 }
+
+
