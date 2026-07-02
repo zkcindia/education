@@ -1,95 +1,32 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLOR } from '../../constants/Colors';
 import { FontAwesome5 } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { submitQuiz } from '../../constants/api/apiScore';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 
 export default function ResultScreen() {
   const navigation = useNavigation();
   const router = useRoute();
-  
-  // ✅ Debug: Check all params
-  console.log('========== RESULT SCREEN PARAMS ==========');
-  console.log('All params:', router.params);
-  console.log('===========================================');
-  
-  const { score, subject, teacherId, teacherName } = router.params || {};
-  
-  // ✅ Emergency fix: If subject is undefined, try to get from route
-  const finalSubjectId = subject || router.params?.subjectId || 1;
-  
-  console.log('📤 Final Subject ID:', finalSubjectId);
-  
-  const [user, setUser] = useState(null);
-  const [submitted, setSubmitted] = useState(false);
   const viewRef = useRef();
 
-  useEffect(() => {
-    if (!finalSubjectId) {
-      Alert.alert('Error', 'Subject ID is missing. Please try again.');
-      return;
-    }
-    loadUserAndSubmit();
-  }, []);
-
-  const loadUserAndSubmit = async () => {
-    try {
-      const userData = await AsyncStorage.getItem('userData');
-      console.log('📦 UserData:', userData);
-      
-      if (!userData) {
-        Alert.alert('Error', 'Please login to save your score.');
-        return;
-      }
-
-      const parsedUser = JSON.parse(userData);
-      console.log('👤 User ID:', parsedUser.id);
-      
-      setUser(parsedUser);
-      
-      if (parsedUser.id && finalSubjectId) {
-        await submitUserScore(parsedUser.id, finalSubjectId);
-      }
-      
-    } catch (error) {
-      console.log('❌ Error:', error);
-    }
-  };
-
-  const submitUserScore = async (userId, subId) => {
-    if (submitted) return;
-    
-    console.log('========== SUBMITTING SCORE ==========');
-    console.log('📤 User ID:', userId);
-    console.log('📤 Subject ID:', subId);
-    console.log('📤 Score:', score);
-    console.log('=======================================');
-    
-    try {
-      const response = await submitQuiz({
-        userId: userId,
-        subjectId: subId,
-        score: Number(score) || 0,
-      });
-
-      console.log('✅ Success:', response.data);
-      setSubmitted(true);
-      
-    } catch (error) {
-      console.log('❌ Error:', error.response?.data || error.message);
-      
-      let errorMsg = 'Failed to submit score.';
-      if (error.response?.data?.error) {
-        errorMsg = error.response.data.error;
-      }
-      
-      Alert.alert('Error', errorMsg, [{ text: 'OK' }]);
-    }
-  };
+  const {
+    score = 0,
+    totalMarks = 20,
+    passed = false,
+    message = '',
+    remainingAttempts = 0,
+    attemptNo = 1,
+    teacherName,
+  } = router.params || {};
 
   const shareResults = async () => {
     try {
@@ -106,33 +43,61 @@ export default function ResultScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container} ref={viewRef}>
       <Text style={styles.title}>Quiz Result!</Text>
-      <Image 
-        source={{ uri: 'https://w7.pngwing.com/pngs/10/33/png-transparent-winner-medal-illustration-gold-medal-trophy-christmas-trophy-s-emblem-medal-logo.png' }} 
-        style={styles.image} 
+
+      <Image
+        source={{
+          uri: passed
+            ? 'https://w7.pngwing.com/pngs/10/33/png-transparent-winner-medal-illustration-gold-medal-trophy-christmas-trophy-s-emblem-medal-logo.png'
+            : 'https://cdn-icons-png.flaticon.com/512/463/463612.png',
+        }}
+        style={styles.image}
       />
-      
+
       <View style={styles.resultContainer}>
-        <Text style={styles.congratulationsText}>Congratulations!</Text>
-        <Text style={styles.congratulationsMessage}>
-          You have completed your quiz and earned {score || 0} coins!
+        <Text style={styles.congratulationsText}>
+          {passed ? 'Congratulations!' : 'Better Luck Next Time'}
         </Text>
-        
+
+        <Text style={styles.congratulationsMessage}>
+          {message || (passed ? 'You passed the quiz.' : 'Better luck next attempt.')}
+        </Text>
+
         <View style={styles.scoreContainer}>
           <Text style={styles.label}>YOUR SCORE</Text>
-          <Text style={styles.score}>{score || 0}</Text>
+          <Text style={styles.score}>
+            {score}/{totalMarks}
+          </Text>
         </View>
-        
+
         <View style={styles.coinsContainer}>
           <Text style={styles.label}>EARNED COINS</Text>
           <View style={styles.coinRow}>
-            <Image 
-              source={{ uri: 'https://www.vhv.rs/dpng/d/141-1411128_coin-vector-png-transparent-coin-vector-png-png.png' }} 
-              style={styles.coinImage} 
+            <Image
+              source={{
+                uri: 'https://www.vhv.rs/dpng/d/141-1411128_coin-vector-png-transparent-coin-vector-png-png.png',
+              }}
+              style={styles.coinImage}
             />
-            <Text style={styles.score}>{score || 0}</Text>
+            <Text style={styles.score}>{score}</Text>
           </View>
         </View>
-        
+
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>Attempt No: {attemptNo}</Text>
+
+          {!passed && (
+            <Text style={styles.failedText}>
+              Remaining Attempts: {remainingAttempts}
+            </Text>
+          )}
+
+          <Text style={passed ? styles.successText : styles.failedText}>
+            {passed
+              ? '✅ Next round will unlock tomorrow.'
+              : '❌ Pass mark is 18/20.'}
+          </Text>
+        </View>
+
         {teacherName && (
           <View style={styles.teacherContainer}>
             <Text style={styles.teacherName}>{teacherName}</Text>
@@ -142,15 +107,15 @@ export default function ResultScreen() {
           </View>
         )}
       </View>
-      
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity onPress={shareResults} style={[styles.button, styles.shareButton]}>
           <FontAwesome5 name="share-alt" size={15} color="black" />
           <Text style={styles.buttonText}>Share Results</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.button, styles.homeButton]} 
+
+        <TouchableOpacity
+          style={[styles.button, styles.homeButton]}
           onPress={() => navigation.navigate('(drawer)')}
         >
           <Text style={[styles.buttonText, styles.homeButtonText]}>Go To Home</Text>
@@ -161,16 +126,16 @@ export default function ResultScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flexGrow: 1, 
-    alignItems: 'center', 
-    padding: 20, 
+  container: {
+    flexGrow: 1,
+    alignItems: 'center',
+    padding: 20,
     paddingTop: 30,
     backgroundColor: '#f5f5f5',
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
     marginBottom: 20,
     color: COLOR.background,
   },
@@ -232,6 +197,31 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     resizeMode: 'contain',
+  },
+  infoBox: {
+    width: '100%',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    padding: 12,
+    gap: 6,
+  },
+  infoText: {
+    fontSize: 15,
+    fontFamily: 'roboto-medium',
+    color: COLOR.background,
+    textAlign: 'center',
+  },
+  successText: {
+    fontSize: 14,
+    fontFamily: 'roboto-medium',
+    color: 'green',
+    textAlign: 'center',
+  },
+  failedText: {
+    fontSize: 14,
+    fontFamily: 'roboto-medium',
+    color: '#ff6b6b',
+    textAlign: 'center',
   },
   teacherContainer: {
     flexDirection: 'row',
