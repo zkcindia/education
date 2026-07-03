@@ -495,9 +495,15 @@ export default function AllClasses() {
 
             {/* FAB */}
             {(viewMode === 'boards' || viewMode === 'classes' || viewMode === 'subjects') && (
-                <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('screen/QuestionUpload')}>
-                    <AntDesign name="plus" size={30} color="#FFF" />
-                </TouchableOpacity>
+<TouchableOpacity
+  style={styles.fab}
+  onPress={() => navigation.navigate('screen/QuestionUpload')}
+>
+  <View style={styles.fabCircle}>
+    <AntDesign name="plus" size={28} color="#FFF" />
+  </View>
+  <Text style={styles.fabText}>Add Question</Text>
+</TouchableOpacity>
             )}
         </SafeAreaView>
     );
@@ -706,20 +712,29 @@ const styles = StyleSheet.create({
         fontFamily: 'roboto-medium',
         fontSize: 16,
     },
-    fab: {
-        backgroundColor: COLOR.background,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'absolute',
-        bottom: 20,
-        right: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 5,
-    },
+fab: {
+  position: 'absolute',
+  bottom: 20,
+  right: 16,
+  alignItems: 'center',
+},
+fabCircle: {
+  backgroundColor: COLOR.background,
+  width: 56,
+  height: 56,
+  borderRadius: 28,
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+  elevation: 5,
+},
+fabText: {
+  marginTop: 5,
+  fontSize: 11,
+  color: '#333',
+  fontFamily: 'roboto-medium',
+},
 });

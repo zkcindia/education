@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Image, TextInput, SafeAreaView, ScrollView, Dimensions, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { Feather, FontAwesome } from '@expo/vector-icons'
+import { Feather, FontAwesome , AntDesign } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { COLOR } from '../../../constants/Colors'
 import Banner from '../../../components/home/Banner'
@@ -53,12 +53,12 @@ export default function Index() {
               {userName?.name || 'Guest'}
             </Text>
 
-            <Text style={styles.userSubtitle}>
-              Find your class and enjoy new arrivals ✨
-            </Text>
+<Text style={styles.userSubtitle}>
+  Manage your classes and inspire every learner 📚
+</Text>
           </View>
 
-          <View style={styles.rightHeaderContainer}>
+          {/* <View style={styles.rightHeaderContainer}>
             <TouchableOpacity
               style={styles.premiumButton}
               onPress={() => router.push('/payment/billing')}
@@ -67,7 +67,7 @@ export default function Index() {
                 👑 upgrade Premium
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
         {/* Stats */}
@@ -111,14 +111,29 @@ export default function Index() {
 
         {/* Existing Components */}
         <Banner />
-        <Sloka />
+        {/* <Sloka /> */}
         <PopularCourse />
         {/* <Banner /> */}
         <ClassBannerPage />
         {/* <FeaturedCourse /> */}
         <TopMentor />
-        <Banner />
+        {/* <Banner /> */}
       </ScrollView>
+
+<TouchableOpacity
+  style={styles.fab}
+  onPress={() => router.push('/screen/QuestionUpload')}
+  activeOpacity={0.85}
+>
+  <View style={styles.fabLabel}>
+    <Text style={styles.fabText}>Add Question</Text>
+  </View>
+
+  <View style={styles.fabCircle}>
+    <AntDesign name="plus" size={28} color="#FFF" />
+  </View>
+</TouchableOpacity>
+
     </SafeAreaView>
   )
 }
@@ -219,4 +234,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'roboto-bold',
   },
+
+fab: {
+  position: 'absolute',
+  bottom: 2,
+  right: 2,
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+
+fabLabel: {
+  backgroundColor: '#FFF',
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  borderRadius: 18,
+  marginRight: 10,
+
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+  elevation: 4,
+},
+
+fabCircle: {
+  width: 58,
+  height: 58,
+  borderRadius: 29,
+  backgroundColor: COLOR.background,
+  justifyContent: 'center',
+  alignItems: 'center',
+
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.25,
+  shadowRadius: 5,
+  elevation: 6,
+},
+
+fabText: {
+  fontSize: 13,
+  color: COLOR.background,
+  fontFamily: 'roboto-bold',
+},
 })
