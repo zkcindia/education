@@ -51,7 +51,7 @@ export default function TeacherReferEarnScreen() {
   });
 
   // Teacher earns ₹500 per referral
-  const REFERRAL_AMOUNT = 500;
+  const REFERRAL_AMOUNT = 50;
 
   useEffect(() => {
     loadTeacherData();
@@ -206,7 +206,7 @@ export default function TeacherReferEarnScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Teacher Refer & Earn</Text>
+        <Text style={styles.headerTitle}>Student Refer & Earn</Text>
         <TouchableOpacity onPress={() => loadWallet()}>
           <Feather name="refresh-cw" size={20} color="#fff" />
         </TouchableOpacity>
@@ -279,7 +279,7 @@ export default function TeacherReferEarnScreen() {
         {/* Referral Card */}
         <View style={styles.card}>
           <MaterialCommunityIcons name="gift-outline" size={50} color="#EA580C" />
-          <Text style={styles.referTitle}>Refer a Teacher</Text>
+          <Text style={styles.referTitle}>Refer a Student</Text>
           <Text style={styles.referSubtitle}>Earn ₹{REFERRAL_AMOUNT} per referral</Text>
           
           <View style={styles.codeBox}>
@@ -315,9 +315,9 @@ export default function TeacherReferEarnScreen() {
 
         {/* Info Card */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>How Teacher Referral Works</Text>
-          <Text style={styles.infoText}>1️⃣ Share your referral code with other teachers</Text>
-          <Text style={styles.infoText}>2️⃣ Teacher signs up using your code</Text>
+          <Text style={styles.infoTitle}>How Student Referral Works</Text>
+          <Text style={styles.infoText}>1️⃣ Share your referral code with Students</Text>
+          <Text style={styles.infoText}>2️⃣ Student signs up using your code</Text>
           <Text style={styles.infoText}>3️⃣ You earn ₹{REFERRAL_AMOUNT} after verification</Text>
           <Text style={styles.infoText}>4️⃣ Withdraw earnings to your bank account</Text>
         </View>

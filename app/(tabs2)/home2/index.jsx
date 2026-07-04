@@ -126,7 +126,7 @@ export default function Index() {
   activeOpacity={0.85}
 >
   <View style={styles.fabLabel}>
-    <Text style={styles.fabText}>Add Question</Text>
+    <Text style={styles.fabText}>Add Questions</Text>
   </View>
 
   <View style={styles.fabCircle}>
@@ -244,7 +244,7 @@ fab: {
 },
 
 fabLabel: {
-  backgroundColor: '#FFF',
+  backgroundColor: COLOR.background,
   paddingHorizontal: 12,
   paddingVertical: 8,
   borderRadius: 18,
@@ -274,7 +274,7 @@ fabCircle: {
 
 fabText: {
   fontSize: 13,
-  color: COLOR.background,
+  color: "#fff",
   fontFamily: 'roboto-bold',
 },
 })
