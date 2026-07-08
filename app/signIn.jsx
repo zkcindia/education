@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { signInUser } from '../constants/api/apiSignUp';
 import { useToast } from 'react-native-toast-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from "expo-router";
 
 export default function signUp() {
   const navigation = useNavigation();
@@ -61,19 +62,21 @@ if(response.data.refresh_token){
 
     navigation.navigate('(tabs2)');
 
-  } else if(response.data.user_data){
+} else if(response.data.user_data){
 
-    const userData = JSON.stringify(
-      response.data.user_data
-    );
+  const userData = JSON.stringify(
+    response.data.user_data
+  );
 
-    await AsyncStorage.setItem(
-      'userData',
-      userData
-    );
+  await AsyncStorage.setItem(
+    'userData',
+    userData
+  );
 
-    navigation.navigate('(drawer)');
-  }
+  await AsyncStorage.removeItem("hasVisitedStudentIntro");
+
+  router.replace("/(drawer)/(studentIntro)/WordOfDay");
+}
 
   toast.show(response.data.message, {
     type: 'success',

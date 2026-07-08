@@ -181,18 +181,19 @@ export default function Index() {
             <FontAwesome name="angle-right" size={24} color={COLOR.background} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.profileCard}>
-            <View style={styles.row}>
-              <Entypo name="wallet" size={22} color={COLOR.background} />
-
-              <View>
-                <Text style={styles.cardText}>My Wallet</Text>
-                <Text style={styles.walletText}>Balance: ₹{walletBalance}</Text>
-              </View>
-            </View>
-
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-          </TouchableOpacity>
+<TouchableOpacity 
+  style={styles.profileCard}
+  onPress={() => navigation.navigate('screen/Wallet')}  // ← YEH ADD KARO
+>
+  <View style={styles.row}>
+    <Entypo name="wallet" size={22} color={COLOR.background} />
+    <View>
+      <Text style={styles.cardText}>My Wallet</Text>
+      <Text style={styles.walletText}>Balance: ₹{walletBalance}</Text>
+    </View>
+  </View>
+  <FontAwesome name="angle-right" size={24} color={COLOR.background} />
+</TouchableOpacity>
 
           <TouchableOpacity style={styles.profileCard}>
             <View style={styles.row}>

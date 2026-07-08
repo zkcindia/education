@@ -25,7 +25,12 @@ export default function Screen() {
         <TouchableOpacity onPress={() => navigation.navigate('signIn')} style={styles.signInButton}>
           <Text style={styles.signInButtonText}>Sign In</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('signUp')} style={styles.signUpButton}>
+        
+        {/* CHANGE: Navigate to roleSelection instead of signUp */}
+        <TouchableOpacity 
+onPress={() => navigation.navigate('RoleSelection')}
+          style={styles.signUpButton}
+        >
           <Text style={styles.signUpButtonText}>Sign Up</Text>
         </TouchableOpacity>
       </View>

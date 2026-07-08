@@ -254,7 +254,7 @@ export default function ReferEarnScreen() {
             size={50}
             color="#EA580C"
           />
-          <Text style={styles.referTitle}>Earn ₹100 per Referral</Text>
+          <Text style={styles.referTitle}>Earn ₹50 per Referral</Text>
 
           <View style={styles.codeBox}>
             <Text style={styles.codeLabel}>Your Code</Text>

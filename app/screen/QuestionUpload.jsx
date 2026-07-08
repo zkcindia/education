@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, TextInput, Button, Text, FlatList,
+  View, TextInput, Text, FlatList,
   TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Platform
 } from 'react-native';
 import { COLOR } from '../../constants/Colors';
@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as XLSX from 'xlsx';
 import * as FileSystem from 'expo-file-system';
+import { AntDesign } from '@expo/vector-icons';
 
 const QuestionUpload = () => {
   const toast = useToast();
@@ -29,7 +30,6 @@ const QuestionUpload = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileUploadProgress, setFileUploadProgress] = useState(0);
   
-  // ✅ NEW STATES FOR BOARD
   const [boards, setBoards] = useState([]);
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(false);
@@ -44,47 +44,57 @@ const QuestionUpload = () => {
     subject: null,
   });
 
+  // ✅ Page load par modal automatically open
   useEffect(() => {
     openBottomSheet();
     getClasses();
-    fetchBoards(); // ✅ Fetch boards on load
+    fetchBoards();
   }, []);
 
-  // ✅ FETCH BOARDS
   const fetchBoards = async () => {
     setBoardLoading(true);
     try {
       const response = await getBoards();
+      console.log('📚 Boards Response:', response.data);
       if (response.data?.status === true) {
         setBoards(response.data.data || []);
+      } else {
+        setBoards(response.data || []);
       }
     } catch (error) {
       console.log('Error fetching boards:', error);
+      setBoards([]);
     }
     setBoardLoading(false);
   };
 
-  // ✅ FETCH CLASSES BY BOARD (NEW)
   const fetchClassesByBoard = async (boardName) => {
     try {
       const response = await getClassesByBoard(boardName);
+      console.log('📖 Classes Response:', response.data);
       if (response.data?.status === true) {
         setClassData(response.data.data || []);
+      } else {
+        setClassData(response.data || []);
       }
     } catch (error) {
       console.log('Error fetching classes by board:', error);
+      setClassData([]);
     }
   };
 
-  // ✅ FETCH SUBJECTS BY BOARD & CLASS (NEW)
   const fetchSubjectsByBoardClass = async (boardName, className) => {
     try {
       const response = await getSubjects(boardName, className);
+      console.log('📝 Subjects Response:', response.data);
       if (response.data?.status === true) {
         setSubjectData(response.data.data || []);
+      } else {
+        setSubjectData(response.data || []);
       }
     } catch (error) {
       console.log('Error fetching subjects:', error);
+      setSubjectData([]);
     }
   };
 
@@ -111,32 +121,63 @@ const QuestionUpload = () => {
     }
   };
 
-  // ✅ HANDLE BOARD SELECTION
   const handleBoardSelection = (boardId) => {
-    const board = boards.find(b => b.id === boardId);
-    setSelectedBoard(board);
-    setSelectedClass(null);
-    setSelectedSubject(null);
-    setClassData([]);
-    setSubjectData([]);
+    console.log('📚 Board Selected:', boardId);
+    if (!boardId) {
+      setSelectedBoard(null);
+      setSelectedClass(null);
+      setSelectedSubject(null);
+      setClassData([]);
+      setSubjectData([]);
+      return;
+    }
+    
+    const board = boards.find(b => String(b.id) === String(boardId));
+    console.log('📚 Board Found:', board);
+    
     if (board) {
+      setSelectedBoard(board);
+      setSelectedClass(null);
+      setSelectedSubject(null);
+      setClassData([]);
+      setSubjectData([]);
       fetchClassesByBoard(board.board_name);
     }
   };
 
-  // ✅ HANDLE CLASS SELECTION (UPDATED)
   const handleClassSelection = (classId) => {
-    const classItem = classData.find(c => c.id === classId);
-    setSelectedClass(classItem);
-    setSelectedSubject(null);
-    setSubjectData([]);
-    if (selectedBoard && classItem) {
-      fetchSubjectsByBoardClass(selectedBoard.board_name, classItem.name);
+    console.log('📖 Class Selected:', classId);
+    if (!classId) {
+      setSelectedClass(null);
+      setSelectedSubject(null);
+      setSubjectData([]);
+      return;
+    }
+    
+    const classItem = classData.find(c => String(c.id) === String(classId));
+    console.log('📖 Class Found:', classItem);
+    
+    if (classItem) {
+      setSelectedClass(classItem);
+      setSelectedSubject(null);
+      setSubjectData([]);
+      if (selectedBoard) {
+        fetchSubjectsByBoardClass(selectedBoard.board_name, classItem.name);
+      }
     }
   };
 
-  // ✅ HANDLE SUBJECT SELECTION
   const handleSubjectSelection = (subjectId) => {
+    console.log('📝 Subject Selected:', subjectId);
+    if (!subjectId) {
+      setSelectedSubject(null);
+      setQuestionData((prev) => ({
+        ...prev,
+        subject: null,
+      }));
+      return;
+    }
+    
     setSelectedSubject(subjectId);
     setQuestionData((prev) => ({
       ...prev,
@@ -179,7 +220,6 @@ const QuestionUpload = () => {
     }
   };
 
-  // Bulk Upload Functions - Using uploadBulkQuestions API with Expo Document Picker
   const handleBulkUpload = async () => {
     if (!selectedSubject) {
       Alert.alert('Error', 'Please select a subject first');
@@ -204,7 +244,6 @@ const QuestionUpload = () => {
       const file = result.assets[0];
       setSelectedFile(file);
       
-      // Show confirmation before uploading
       Alert.alert(
         'Confirm Upload',
         `Upload file: ${file.name}?`,
@@ -229,7 +268,6 @@ const QuestionUpload = () => {
       const parsedData = JSON.parse(userData);
       const teacherId = parsedData.id;
 
-      // Simulate progress
       const progressInterval = setInterval(() => {
         setFileUploadProgress(prev => {
           if (prev >= 90) {
@@ -240,7 +278,6 @@ const QuestionUpload = () => {
         });
       }, 500);
 
-      // Using uploadBulkQuestions function
       const response = await uploadBulkQuestions({
         id: teacherId,
         subject: selectedSubject,
@@ -260,7 +297,6 @@ const QuestionUpload = () => {
           placement: 'top',
         });
         
-        // Navigate back or refresh
         setTimeout(() => {
           navigation.navigate('question');
         }, 1500);
@@ -283,7 +319,6 @@ const QuestionUpload = () => {
     }
   };
 
-  // Alternative: Preview Excel file before uploading
   const handlePreviewAndUpload = async () => {
     if (!selectedSubject) {
       Alert.alert('Error', 'Please select a subject first');
@@ -306,16 +341,11 @@ const QuestionUpload = () => {
       }
 
       const file = result.assets[0];
-      
-      // Read and parse the file for preview
       const fileUri = file.uri;
-      
-      // Read the file content
       const fileContent = await FileSystem.readAsStringAsync(fileUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
       
-      // Parse the file
       const workbook = XLSX.read(fileContent, { type: 'base64' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(firstSheet);
@@ -325,7 +355,6 @@ const QuestionUpload = () => {
         return;
       }
       
-      // Show preview and confirm
       Alert.alert(
         'Preview Questions',
         `${jsonData.length} questions found in the file. Upload now?`,
@@ -341,10 +370,8 @@ const QuestionUpload = () => {
     }
   };
 
-  // Download Template
   const downloadTemplate = async () => {
     try {
-      // Create template data with sample questions
       const templateData = [
         {
           'question': 'What is the capital of France?',
@@ -372,23 +399,17 @@ const QuestionUpload = () => {
         }
       ];
 
-      // Create workbook
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(templateData);
       XLSX.utils.book_append_sheet(wb, ws, 'Questions');
       
-      // Generate file
       const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-      
-      // Save file
       const fileUri = FileSystem.documentDirectory + 'question_template.xlsx';
       await FileSystem.writeAsStringAsync(fileUri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
       
-      // For web platform
       if (Platform.OS === 'web') {
-        // Create a blob from base64
         const byteCharacters = atob(wbout);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -406,7 +427,6 @@ const QuestionUpload = () => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
-        // For mobile platforms
         Alert.alert(
           'Template Downloaded',
           `Template saved to: ${fileUri}`,
@@ -473,21 +493,23 @@ const QuestionUpload = () => {
 
   const openBottomSheet = () => {
     setModalVisible(true);
-    fetchBoards(); // ✅ Refresh boards on open
+    fetchBoards();
   };
 
   const closeBottomSheet = () => {
     setModalVisible(false);
   };
 
-  // ✅ UPDATED CONFIRM SELECTION
   const handleConfirmSelection = () => {
+    console.log('✅ Confirm clicked - Board:', selectedBoard, 'Class:', selectedClass, 'Subject:', selectedSubject);
+    
     if (selectedBoard && selectedClass && selectedSubject) {
       setQuestionData((prev) => ({
         ...prev,
         subject: selectedSubject,
       }));
-      closeBottomSheet();
+      setModalVisible(false);
+      
       toast.show(`Selected: ${selectedBoard.board_name} → ${selectedClass.name} → ${selectedSubject.name}`, {
         type: 'success',
         duration: 1500,
@@ -499,31 +521,33 @@ const QuestionUpload = () => {
     }
   };
 
-  // ✅ MAP DATA FOR PICKER
   const boardItems = boards.map((item) => ({
-    label: item.board_name,
+    label: item.board_name || item.name || 'Unknown Board',
     value: item.id,
   }));
 
   const classItems = classData.map((item) => ({
-    label: item.name,
+    label: item.name || 'Unknown Class',
     value: item.id,
   }));
 
   const subjectItems = subjectData.map((item) => ({
-    label: item.name,
+    label: item.name || 'Unknown Subject',
     value: item.id,
   }));
+
+  // ✅ CHECK - Subject select hua ya nahi
+  const isSubjectSelected = selectedSubject !== null;
 
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Upload Questions</Text>
 
-      {/* ✅ UPDATED Selection Status - Shows Board → Class → Subject */}
-      {selectedSubject && selectedClass && selectedBoard && (
+      {/* ✅ Selection Status - Jab subject select ho tabhi dikhe */}
+      {isSubjectSelected && (
         <View style={styles.selectionStatus}>
           <Text style={styles.selectionText}>
-            📚 {selectedBoard?.board_name} → 📖 {selectedClass?.name} → 📝 {subjectData.find(s => s.id === selectedSubject)?.name || 'Loading...'}
+            📚 {selectedBoard?.board_name || 'Board'} → 📖 {selectedClass?.name || 'Class'} → 📝 {subjectData.find(s => String(s.id) === String(selectedSubject))?.name || 'Subject'}
           </Text>
           <TouchableOpacity onPress={openBottomSheet} style={styles.changeButton}>
             <Text style={styles.changeButtonText}>Change</Text>
@@ -531,148 +555,174 @@ const QuestionUpload = () => {
         </View>
       )}
 
-      {/* Bulk Upload Section */}
-      <View style={styles.bulkSection}>
-        <TouchableOpacity 
-          style={[styles.bulkButton, !selectedSubject && styles.disabledButton]} 
-          onPress={handleBulkUpload}
-          disabled={!selectedSubject || isLoading}
-        >
-          <Text style={styles.bulkButtonText}>📤 Upload Excel File</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.templateButton} 
-          onPress={downloadTemplate}
-          disabled={isLoading}
-        >
-          <Text style={styles.templateButtonText}>📄 Download Template</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Preview and Upload Option */}
-      <TouchableOpacity 
-        style={[styles.previewButton, !selectedSubject && styles.disabledButton]} 
-        onPress={handlePreviewAndUpload}
-        disabled={!selectedSubject || isLoading}
-      >
-        <Text style={styles.previewButtonText}>👁️ Preview Excel Before Upload</Text>
-      </TouchableOpacity>
-
-      {/* Upload Progress */}
-      {isLoading && (
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>Uploading: {fileUploadProgress}%</Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${fileUploadProgress}%` }]} />
+      {/* ✅ ONLY SHOW FORM WHEN SUBJECT IS SELECTED */}
+      {isSubjectSelected ? (
+        <>
+          <View style={styles.bulkSection}>
+            <TouchableOpacity 
+              style={styles.bulkButton} 
+              onPress={handleBulkUpload}
+              disabled={isLoading}
+            >
+              <Text style={styles.bulkButtonText}>📤 Upload Excel File</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.templateButton} 
+              onPress={downloadTemplate}
+              disabled={isLoading}
+            >
+              <Text style={styles.templateButtonText}>📄 Download Template</Text>
+            </TouchableOpacity>
           </View>
+
+          <TouchableOpacity 
+            style={styles.previewButton} 
+            onPress={handlePreviewAndUpload}
+            disabled={isLoading}
+          >
+            <Text style={styles.previewButtonText}>👁️ Preview Excel Before Upload</Text>
+          </TouchableOpacity>
+
+          {isLoading && (
+            <View style={styles.progressContainer}>
+              <Text style={styles.progressText}>Uploading: {fileUploadProgress}%</Text>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${fileUploadProgress}%` }]} />
+              </View>
+            </View>
+          )}
+
+          <Text style={styles.orText}>OR Add Manually</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Enter question"
+            value={questionData.question}
+            onChangeText={(value) => handleInputChange('question', value)}
+            editable={!isLoading}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Option 1"
+            value={questionData.option1}
+            onChangeText={(value) => handleInputChange('option1', value)}
+            editable={!isLoading}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Option 2"
+            value={questionData.option2}
+            onChangeText={(value) => handleInputChange('option2', value)}
+            editable={!isLoading}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Option 3"
+            value={questionData.option3}
+            onChangeText={(value) => handleInputChange('option3', value)}
+            editable={!isLoading}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Option 4"
+            value={questionData.option4}
+            onChangeText={(value) => handleInputChange('option4', value)}
+            editable={!isLoading}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Correct Answer"
+            value={questionData.correct_answer}
+            onChangeText={(value) => handleInputChange('correct_answer', value)}
+            editable={!isLoading}
+          />
+
+          <TouchableOpacity 
+            style={[styles.addButton, isLoading && styles.disabledButton]} 
+            onPress={addQuestion}
+            disabled={isLoading}
+          >
+            <Text style={styles.addButtonText}>Add Question</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.questionCount}>
+            Total Questions: {questions.length}
+          </Text>
+
+          <FlatList
+            data={questions}
+            showsVerticalScrollIndicator={false}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item, index }) => (
+              <View style={styles.questionCard}>
+                <View style={styles.questionHeader}>
+                  <Text style={styles.questionNumber}>Q{index + 1}.</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const updated = [...questions];
+                      updated.splice(index, 1);
+                      setQuestions(updated);
+                    }}
+                    style={styles.deleteButton}
+                    disabled={isLoading}
+                  >
+                    <Text style={styles.deleteButtonText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.questionText}>{item.question}</Text>
+                <Text style={styles.optionText}>Option 1: {item.option1}</Text>
+                <Text style={styles.optionText}>Option 2: {item.option2}</Text>
+                <Text style={styles.optionText}>Option 3: {item.option3}</Text>
+                <Text style={styles.optionText}>Option 4: {item.option4}</Text>
+                <Text style={styles.correctAnswer}>Correct Answer: {item.correct_answer}</Text>
+              </View>
+            )}
+          />
+
+          <TouchableOpacity 
+            style={[styles.submitButton, (questions.length === 0 || isLoading) && styles.disabledButton]} 
+            onPress={handleSubmit}
+            disabled={questions.length === 0 || isLoading}
+          >
+            <Text style={styles.submitButtonText}>
+              {isLoading ? 'Uploading...' : `Submit ${questions.length} Questions`}
+            </Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        // ✅ Jab subject select na ho - sirf yeh message dikhe
+        <View style={styles.noSelectionContainer}>
+          <AntDesign name="exclamationcircle" size={60} color="#6C63FF" />
+          <Text style={styles.noSelectionText}>
+            Please select Board → Class → Subject
+          </Text>
+          <Text style={styles.noSelectionSubText}>
+            You need to select a subject first before adding questions
+          </Text>
+          <TouchableOpacity onPress={openBottomSheet} style={styles.selectNowButton}>
+            <Text style={styles.selectNowButtonText}>Select Now</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      <Text style={styles.orText}>OR Add Manually</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Enter question"
-        value={questionData.question}
-        onChangeText={(value) => handleInputChange('question', value)}
-        editable={!isLoading}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Option 1"
-        value={questionData.option1}
-        onChangeText={(value) => handleInputChange('option1', value)}
-        editable={!isLoading}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Option 2"
-        value={questionData.option2}
-        onChangeText={(value) => handleInputChange('option2', value)}
-        editable={!isLoading}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Option 3"
-        value={questionData.option3}
-        onChangeText={(value) => handleInputChange('option3', value)}
-        editable={!isLoading}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Option 4"
-        value={questionData.option4}
-        onChangeText={(value) => handleInputChange('option4', value)}
-        editable={!isLoading}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Correct Answer"
-        value={questionData.correct_answer}
-        onChangeText={(value) => handleInputChange('correct_answer', value)}
-        editable={!isLoading}
-      />
-
-      <TouchableOpacity 
-        style={[styles.addButton, isLoading && styles.disabledButton]} 
-        onPress={addQuestion}
-        disabled={isLoading}
+      {/* ✅ MODAL */}
+      <Modal 
+        isVisible={isModalVisible} 
+        onBackdropPress={closeBottomSheet}
+        onSwipeComplete={closeBottomSheet}
+        swipeDirection="down"
+        avoidKeyboard={true}
+        style={styles.modalStyle}
       >
-        <Text style={styles.addButtonText}>Add Question</Text>
-      </TouchableOpacity>
-
-      {/* Display current questions count */}
-      <Text style={styles.questionCount}>
-        Total Questions: {questions.length}
-      </Text>
-
-      <FlatList
-        data={questions}
-        showsVerticalScrollIndicator={false}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item, index }) => (
-          <View style={styles.questionCard}>
-            <View style={styles.questionHeader}>
-              <Text style={styles.questionNumber}>Q{index + 1}.</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  const updated = [...questions];
-                  updated.splice(index, 1);
-                  setQuestions(updated);
-                }}
-                style={styles.deleteButton}
-                disabled={isLoading}
-              >
-                <Text style={styles.deleteButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.questionText}>{item.question}</Text>
-            <Text style={styles.optionText}>Option 1: {item.option1}</Text>
-            <Text style={styles.optionText}>Option 2: {item.option2}</Text>
-            <Text style={styles.optionText}>Option 3: {item.option3}</Text>
-            <Text style={styles.optionText}>Option 4: {item.option4}</Text>
-            <Text style={styles.correctAnswer}>Correct Answer: {item.correct_answer}</Text>
-          </View>
-        )}
-      />
-
-      <TouchableOpacity 
-        style={[styles.submitButton, (questions.length === 0 || isLoading) && styles.disabledButton]} 
-        onPress={handleSubmit}
-        disabled={questions.length === 0 || isLoading}
-      >
-        <Text style={styles.submitButtonText}>
-          {isLoading ? 'Uploading...' : `Submit ${questions.length} Questions`}
-        </Text>
-      </TouchableOpacity>
-
-      {/* ✅ UPDATED Modal - Board → Class → Subject */}
-      <Modal isVisible={isModalVisible} onBackdropPress={closeBottomSheet}>
         <View style={styles.bottomSheet}>
-          <Text style={styles.modalHeader}>Select Board → Class → Subject</Text>
+          <View style={styles.modalHeaderRow}>
+            <Text style={styles.modalHeader}>Select Board → Class → Subject</Text>
+            <TouchableOpacity onPress={closeBottomSheet} style={styles.closeModalBtn}>
+              <Text style={styles.closeModalBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
 
-          {/* 1️⃣ BOARD */}
           <Text style={styles.label}>Board</Text>
           <RNPickerSelect
             onValueChange={(value) => handleBoardSelection(value)}
@@ -680,9 +730,9 @@ const QuestionUpload = () => {
             placeholder={{ label: 'Select Board', value: null }}
             style={pickerSelectStyles}
             disabled={isLoading || boardLoading}
+            useNativeAndroidPickerStyle={false}
           />
 
-          {/* 2️⃣ CLASS - Only show when board selected */}
           {selectedBoard && (
             <>
               <Text style={styles.label}>Class</Text>
@@ -691,12 +741,12 @@ const QuestionUpload = () => {
                 items={classItems}
                 placeholder={{ label: 'Select Class', value: null }}
                 style={pickerSelectStyles}
-                disabled={isLoading}
+                disabled={isLoading || classData.length === 0}
+                useNativeAndroidPickerStyle={false}
               />
             </>
           )}
 
-          {/* 3️⃣ SUBJECT - Only show when class selected */}
           {selectedClass && (
             <>
               <Text style={styles.label}>Subject</Text>
@@ -705,18 +755,24 @@ const QuestionUpload = () => {
                 items={subjectItems}
                 placeholder={{ label: 'Select Subject', value: null }}
                 style={pickerSelectStyles}
-                disabled={isLoading}
+                disabled={isLoading || subjectData.length === 0}
+                useNativeAndroidPickerStyle={false}
               />
             </>
           )}
 
           <TouchableOpacity 
-            style={[styles.confirmButton, !selectedSubject && styles.disabledButton]} 
+            style={[
+              styles.confirmButton, 
+              (!selectedBoard || !selectedClass || !selectedSubject) && styles.disabledButton
+            ]} 
             onPress={handleConfirmSelection}
-            disabled={!selectedSubject || isLoading}
+            disabled={!selectedBoard || !selectedClass || !selectedSubject || isLoading}
           >
             <Text style={styles.confirmButtonText}>
-              {selectedSubject ? '✅ Confirm Selection' : 'Select All'}
+              {selectedBoard && selectedClass && selectedSubject 
+                ? '✅ Confirm Selection' 
+                : 'Please select Board → Class → Subject'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -944,11 +1000,34 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     maxHeight: '80%',
   },
+  modalStyle: {
+    margin: 0,
+    justifyContent: 'center',
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   modalHeader: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
+    flex: 1,
+  },
+  closeModalBtn: {
+    padding: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeModalBtnText: {
+    fontSize: 18,
+    color: '#666',
+    fontWeight: 'bold',
   },
   confirmButton: {
     backgroundColor: '#007BFF',
@@ -958,6 +1037,41 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   confirmButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  noSelectionContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    marginVertical: 20,
+    paddingHorizontal: 20,
+  },
+  noSelectionText: {
+    fontSize: 18,
+    color: '#333',
+    textAlign: 'center',
+    marginTop: 16,
+    fontFamily: 'roboto-bold',
+  },
+  noSelectionSubText: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 8,
+    fontFamily: 'roboto',
+  },
+  selectNowButton: {
+    backgroundColor: '#6C63FF',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  selectNowButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',

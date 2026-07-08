@@ -65,3 +65,23 @@ export const fetchSloka = async () => {
     throw error;
   }
 };
+
+export const getSpecialDayMessage = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/get-today-special-day-message/`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const getBirthdayUsers = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/birthday-users/`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+

@@ -218,7 +218,7 @@ export default function Index() {
               <View>
                 <Text style={styles.optionText}>Refer & Earn</Text>
                 <Text style={styles.referSubText}>
-                  Earn ₹100 per referral
+                  Earn ₹50 per referral
                 </Text>
               </View>
             </View>

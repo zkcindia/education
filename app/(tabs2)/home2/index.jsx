@@ -14,7 +14,7 @@ import { router } from 'expo-router'
 const { width, height } = Dimensions.get('window')
 
 export default function Index() {
-  const [userName, setUserName] = useState({ name: '', points: 0 })
+const [userName, setUserName] = useState({ name: '', points: 0, image: '' })
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -41,12 +41,12 @@ export default function Index() {
       >
         {/* Top Header */}
         <View style={styles.topContainer}>
-          <Image
-            source={{
-              uri: 'https://www.icon0.com/free/static2/preview2/stock-photo-little-boy-faces-children-avatar-people-icon-character-cartoon-32990.jpg',
-            }}
-            style={styles.profileImage}
-          />
+<Image
+  source={{
+    uri: userName?.image || 'https://www.icon0.com/free/static2/preview2/stock-photo-little-boy-faces-children-avatar-people-icon-character-cartoon-32990.jpg',
+  }}
+  style={styles.profileImage}
+/>
 
           <View style={styles.userNameContainer}>
             <Text style={styles.userNameText}>

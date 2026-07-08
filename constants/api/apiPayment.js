@@ -217,3 +217,22 @@ export const getBankDetails = async () => {
   console.log("GET BANK DETAILS - Response:", response.data);
   return response.data;
 };
+
+
+export const getWithdrawalHistory = async () => {
+  const token = await getToken();
+
+  console.log("WITHDRAWAL HISTORY TOKEN:", token);
+
+  const response = await axios.get(
+    `${API_URL}/withdrawal-history/`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
