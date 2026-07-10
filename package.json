@@ -63,7 +63,9 @@
     "redux": "^5.0.1",
     "use-sync-external-store": "^1.2.2",
     "xlsx": "^0.18.5",
-    "expo-linear-gradient": "~13.0.2"
+    "expo-linear-gradient": "~13.0.2",
+    "lottie-react-native": "6.7.0",
+    "expo-image-picker": "~15.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

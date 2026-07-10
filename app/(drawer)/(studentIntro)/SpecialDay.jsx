@@ -64,7 +64,7 @@ export default function SpecialDay() {
   }
 
   // ✅ Now specialDayData is the message object directly
-  const dayName = specialDayData?.title || "Special Day";
+  const dayName = specialDayData?.title;
   const description = specialDayData?.description || "Every day is special when you learn something new and make it count!";
   const imageUrl = specialDayData?.image_url || specialDayData?.image || specialDayData?.icon;
 

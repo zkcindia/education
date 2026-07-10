@@ -178,7 +178,7 @@ export default function ClassBannerSlider() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
+    marginTop: 20,
   },
 
   slideWrapper: {

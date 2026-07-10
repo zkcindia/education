@@ -44,7 +44,7 @@ if (getRNMinorVersion() >= 75) {
   }
 }
 
-rootProject.name = 'lms_education'
+rootProject.name = 'CandleLight Education'
 
 dependencyResolutionManagement {
   versionCatalogs {

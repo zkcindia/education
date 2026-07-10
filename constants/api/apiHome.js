@@ -66,11 +66,16 @@ export const fetchSloka = async () => {
   }
 };
 
+// apiHome.js
 export const getSpecialDayMessage = async () => {
   try {
     const response = await axios.get(`${API_URL}/get-today-special-day-message/`);
     return response;
   } catch (error) {
+    // If error is 404, return the error object
+    if (error.response && error.response.status === 404) {
+      return error.response;
+    }
     throw error;
   }
 };
@@ -80,6 +85,25 @@ export const getBirthdayUsers = async () => {
   try {
     const response = await axios.get(`${API_URL}/birthday-users/`);
     return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+export const getPointsHistory = async () => {
+  try {
+    const userDataString = await AsyncStorage.getItem('userData');
+    const userData = userDataString ? JSON.parse(userDataString) : null;
+
+    const userId = userData?.id;
+
+    if (!userId) {
+      throw new Error('User ID not found');
+    }
+
+    const response = await axios.get(`${API_URL}/points-history/${userId}/`);
+    return response.data;
   } catch (error) {
     throw error;
   }

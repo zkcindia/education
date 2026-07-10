@@ -121,7 +121,7 @@ export default function HomeBannerSlider() {
         scrollEventThrottle={16}
       />
 
-      <View style={styles.dotsContainer}>
+      {/* <View style={styles.dotsContainer}>
         {banners.map((_, index) => (
           <View
             key={index}
@@ -131,14 +131,14 @@ export default function HomeBannerSlider() {
             ]}
           />
         ))}
-      </View>
+      </View> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
+    marginTop: 20,
   },
 
   slideWrapper: {

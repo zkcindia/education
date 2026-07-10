@@ -199,7 +199,7 @@ await axios.put(
             color: COLOR.white,
           }}
         >
-          My Profile
+          My Profilee
         </Text>
 
         <TouchableOpacity onPress={() => setIsEditing(true)}>

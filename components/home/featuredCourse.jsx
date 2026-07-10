@@ -152,7 +152,7 @@ export default function ClassBannerSlider() {
         scrollEventThrottle={16}
       />
 
-      <View style={styles.dotsContainer}>
+      {/* <View style={styles.dotsContainer}>
         {classBanners.map((_, index) => (
           <View
             key={index}
@@ -162,14 +162,14 @@ export default function ClassBannerSlider() {
             ]}
           />
         ))}
-      </View>
+      </View> */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
+    marginTop: 20,
   },
 
   slideWrapper: {

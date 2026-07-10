@@ -157,7 +157,7 @@ export default function WordOfDay() {
         delay={300}
         style={styles.headingContainer}
       >
-        <Text style={styles.headingText}>Sentence of the Day</Text>
+        <Text style={styles.headingText}>Word of the Day</Text>
       </Animatable.View>
 
       {loading ? (

@@ -17,7 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getBirthdayUsers } from "../../../constants/api/apiHome"; // Import the API function
+import { getBirthdayUsers } from "../../../constants/api/apiHome";
 
 const { width, height } = Dimensions.get("window");
 
@@ -47,18 +47,33 @@ export default function StudentDob() {
       const response = await getBirthdayUsers();
       
       if (response.data) {
-        // Check if response has the expected structure
         const data = response.data;
         
-        setBirthdayData({
-          special_user: {
-            name: data.special_user?.name || "Student",
-            image: data.special_user?.image || null,
-            wishing_message: data.special_user?.wishing_message || 
-              "Wishing you a very Happy Birthday! Keep learning, keep smiling, and have a wonderful year ahead.",
-          },
-          users: data.users || [],
-        });
+        // Check if special_user exists, if not use first user from users array
+        let specialUser = data.special_user;
+        if (!specialUser && data.users && data.users.length > 0) {
+          specialUser = data.users[0];
+          // Remove the first user from users list if it's being used as special_user
+          const remainingUsers = data.users.slice(1);
+          setBirthdayData({
+            special_user: {
+              name: specialUser.name || "Student",
+              image: specialUser.image || null,
+              wishing_message: "Wishing you a very Happy Birthday! Keep learning, keep smiling, and have a wonderful year ahead.",
+            },
+            users: remainingUsers,
+          });
+        } else {
+          setBirthdayData({
+            special_user: {
+              name: data.special_user?.name || "Student",
+              image: data.special_user?.image || null,
+              wishing_message: data.special_user?.wishing_message || 
+                "Wishing you a very Happy Birthday! Keep learning, keep smiling, and have a wonderful year ahead.",
+            },
+            users: data.users || [],
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching birthday users:", error);
@@ -82,7 +97,13 @@ export default function StudentDob() {
     if (image && typeof image === 'string' && image.startsWith('http')) {
       return { uri: image };
     }
-    return require("../../../assets/images/Isolation_Mode.png");
+    return require("../../../assets/images/bday.png");
+  };
+
+  // Get first name only
+  const getFirstName = (fullName) => {
+    if (!fullName) return 'Student';
+    return fullName.split(' ')[0];
   };
 
   if (loading) {
@@ -112,12 +133,7 @@ export default function StudentDob() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <LinearGradient colors={["#FF7F50", "#FF6347", "#FF4500"]} style={styles.container}>
-        <Animatable.View animation="fadeInUp" delay={200} style={styles.header}>
-          <Text style={styles.headerText}>
-            Happy Birthday, {birthdayData.special_user.name}!
-          </Text>
-        </Animatable.View>
-
+        {/* Balloons Animation - Background */}
         <View style={styles.balloonsContainer}>
           <Animatable.Image
             animation={{
@@ -127,7 +143,7 @@ export default function StudentDob() {
             duration={8000}
             iterationCount="infinite"
             style={styles.balloon}
-            // source={require("../../../assets/images/balloon1.png")}
+            source={require("../../../assets/images/balloon1.png")}
           />
 
           <Animatable.Image
@@ -138,62 +154,81 @@ export default function StudentDob() {
             duration={10000}
             iterationCount="infinite"
             style={[styles.balloon, { left: width * 0.6 }]}
-            // source={require("../../../assets/images/balloon2.png")}
+            source={require("../../../assets/images/balloon2.png")}
           />
         </View>
 
-        <Animatable.View animation="bounceIn" delay={500} style={styles.imageContainer}>
-          <Image
-            source={birthdayData.special_user.image 
-              ? getImageSource(birthdayData.special_user.image)
-              : require("../../../assets/images/Isolation_Mode.png")
-            }
-            style={styles.studentImage}
-          />
-        </Animatable.View>
+        {/* Main Content */}
+        <View style={styles.contentContainer}>
+          {/* Happy Birthday with Name - Integrated */}
+          <View style={styles.birthdayHeader}>
+            <Text style={styles.birthdayGreeting}>Happy Birthday</Text>
+            <Text style={styles.birthdayName}>
+              {getFirstName(birthdayData.special_user.name)}!
+            </Text>
+          </View>
 
-        <Animatable.View animation="zoomIn" delay={800} style={styles.wishContainer}>
-          <Text style={styles.wishText}>
-            {birthdayData.special_user.wishing_message}
-          </Text>
-        </Animatable.View>
-
-        {birthdayData.users.length > 0 && (
-          <>
-            <Text style={styles.subHeader}>Other Students Birthday Today:</Text>
-
-            <FlatList
-              data={birthdayData.users}
-              keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-              contentContainerStyle={styles.studentList}
-              renderItem={({ item, index }) => (
-                <Animatable.View
-                  animation="fadeInUp"
-                  delay={index * 200}
-                  style={styles.studentItem}
-                >
-                  <TouchableOpacity
-                    onPress={() => {
-                      const imageUrl = item.image || item.profile_image || item.avatar;
-                      handleImagePress(imageUrl);
-                    }}
-                  >
-                    <Image
-                      source={item.image 
-                        ? getImageSource(item.image)
-                        : require("../../../assets/images/Isolation_Mode.png")
-                      }
-                      style={styles.studentImageItem}
-                    />
-                  </TouchableOpacity>
-
-                  <Text style={styles.name}>{item.name || item.username}</Text>
-                </Animatable.View>
-              )}
+          {/* Birthday Person Image */}
+          <Animatable.View animation="bounceIn" delay={500} style={styles.birthdayImageContainer}>
+            <Image
+              source={birthdayData.special_user.image 
+                ? getImageSource(birthdayData.special_user.image)
+                : require("../../../assets/images/bday.png")
+              }
+              style={styles.birthdayImage}
             />
-          </>
-        )}
+          </Animatable.View>
 
+          {/* Wishing Message */}
+          <Animatable.Text animation="fadeInUp" delay={700} style={styles.birthdayWish}>
+            {birthdayData.special_user.wishing_message}
+          </Animatable.Text>
+
+          {/* Other Students with Birthdays */}
+          {birthdayData.users.length > 0 && (
+            <>
+              <Text style={styles.subHeader}>🎂 Other Students Birthday Today:</Text>
+
+              <FlatList
+                data={birthdayData.users}
+                keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+                contentContainerStyle={styles.studentList}
+                renderItem={({ item, index }) => (
+                  <Animatable.View
+                    animation="fadeInUp"
+                    delay={index * 200}
+                    style={styles.studentItem}
+                  >
+                    <TouchableOpacity
+                      onPress={() => {
+                        const imageUrl = item.image || item.profile_image || item.avatar;
+                        handleImagePress(imageUrl);
+                      }}
+                    >
+                      <Image
+                        source={item.image 
+                          ? getImageSource(item.image)
+                          : require("../../../assets/images/bday.png")
+                        }
+                        style={styles.studentImageItem}
+                      />
+                    </TouchableOpacity>
+
+                    <Text style={styles.name}>{item.name || item.username}</Text>
+                    
+                    {item.dob && (
+                      <Text style={styles.dobText}>
+                        🎂 {new Date(item.dob).toLocaleDateString()}
+                      </Text>
+                    )}
+                  </Animatable.View>
+                )}
+              />
+            </>
+          )}
+        </View>
+
+        {/* Continue Button */}
         <TouchableOpacity
           onPress={async () => {
             try {
@@ -209,6 +244,7 @@ export default function StudentDob() {
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
 
+        {/* Modal for displaying the image */}
         <Modal
           transparent
           visible={modalVisible}
@@ -220,7 +256,7 @@ export default function StudentDob() {
               <Animatable.View animation="zoomIn" delay={200} style={styles.modalImageContainer}>
                 {selectedImage && (
                   <Image 
-                    source={selectedImage.startsWith('http') 
+                    source={selectedImage && selectedImage.startsWith('http') 
                       ? { uri: selectedImage } 
                       : require("../../../assets/images/Isolation_Mode.png")
                     } 
@@ -243,80 +279,135 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? height * 0.02 : height * 0.05,
     paddingBottom: height * 0.01,
   },
-  header: {
+  // Balloons Styles
+  balloonsContainer: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    zIndex: 0,
+  },
+  balloon: {
+    position: "absolute",
+    width: width * 0.2,
+    height: height * 0.15,
+    resizeMode: "contain",
+  },
+  // Content Container
+  contentContainer: {
+    flex: 1,
+    alignItems: 'center',
+    zIndex: 1,
+    paddingHorizontal: width * 0.02,
+    paddingTop: height * 0.02,
+  },
+  // Birthday Header - Happy Birthday + Name together
+  birthdayHeader: {
+    alignItems: 'center',
     marginBottom: height * 0.02,
-    alignItems: "center",
-    zIndex: 1,
   },
-  headerText: {
-    fontSize: width * 0.06,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
+  birthdayGreeting: {
+    fontSize: width * 0.07,
+    fontWeight: 'bold',
+    color: '#fff',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
-  imageContainer: {
-    alignItems: "center",
-    marginBottom: height * 0.03,
-    zIndex: 1,
+  birthdayName: {
+    fontSize: width * 0.09,
+    fontWeight: 'bold',
+    color: '#fff',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+    marginTop: height * 0.005,
   },
-  studentImage: {
-    width: width * 0.3,
-    height: width * 0.3,
-    borderRadius: width * 0.15,
+  birthdayImageContainer: {
+    alignItems: 'center',
+    marginBottom: height * 0.02,
+  },
+  birthdayImage: {
+    width: width * 0.35,
+    height: width * 0.35,
+    borderRadius: width * 0.175,
     borderWidth: 4,
-    borderColor: "#fff",
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
-  wishContainer: {
-    marginBottom: height * 0.03,
-    paddingHorizontal: width * 0.1,
-    zIndex: 1,
-  },
-  wishText: {
+  birthdayWish: {
     fontSize: width * 0.045,
-    textAlign: "center",
-    color: "#fff",
+    textAlign: 'center',
+    color: '#fff',
     lineHeight: height * 0.04,
+    paddingHorizontal: width * 0.05,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    marginBottom: height * 0.02,
   },
+  // Other Students Styles
   subHeader: {
     fontSize: width * 0.05,
     fontWeight: "bold",
     color: "#fff",
     marginBottom: height * 0.02,
     zIndex: 1,
+    marginTop: height * 0.01,
   },
   studentList: {
-    paddingBottom: height * 0.04,
+    paddingBottom: height * 0.02,
     zIndex: 1,
   },
   studentItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: height * 0.02,
+    marginBottom: height * 0.015,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    width: '100%',
   },
   studentImageItem: {
-    width: width * 0.15,
-    height: width * 0.15,
-    borderRadius: width * 0.075,
+    width: width * 0.12,
+    height: width * 0.12,
+    borderRadius: width * 0.06,
     marginRight: width * 0.03,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   name: {
     fontSize: width * 0.045,
     color: "#fff",
+    fontWeight: '600',
+    flex: 1,
+  },
+  dobText: {
+    fontSize: width * 0.035,
+    color: '#fff',
+    opacity: 0.8,
   },
   continueButton: {
     alignSelf: "center",
     backgroundColor: "#003096",
-    paddingVertical: height * 0.02,
+    paddingVertical: height * 0.018,
     paddingHorizontal: width * 0.15,
     borderRadius: width * 0.1,
     zIndex: 1,
-    marginBottom: 10,
+    marginBottom: height * 0.02,
+    marginTop: height * 0.01,
   },
   buttonText: {
     color: "#fff",
     fontSize: width * 0.05,
     fontWeight: "bold",
   },
+  // Modal Styles
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -333,18 +424,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  balloonsContainer: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-    zIndex: 0,
-  },
-  balloon: {
-    position: "absolute",
-    width: width * 0.2,
-    height: height * 0.15,
-    resizeMode: "contain",
-  },
+  // Loading & Error Styles
   loadingContainer: {
     flex: 1,
     justifyContent: "center",

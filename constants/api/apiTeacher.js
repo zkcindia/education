@@ -114,12 +114,20 @@ export const getSubjects = async (boardName, className) => {
 
 // ✅ Get subjects for logged-in user
 export const fetchBoardClassSubjects = async () => {
-    try {
-        const userData = JSON.parse(await AsyncStorage.getItem('userData'));
-        return await getSubjects(userData?.Education_board, userData?.class);
-    } catch (error) {
-        throw error;
-    }
+  try {
+    const userData = JSON.parse(await AsyncStorage.getItem('userData'));
+
+    const cleanClassName = userData?.class?.includes('-')
+      ? userData.class.split('-').pop().trim()
+      : userData?.class;
+
+    return await getSubjects(
+      userData?.Education_board,
+      cleanClassName
+    );
+  } catch (error) {
+    throw error;
+  }
 };
 
 // ✅ Other existing functions

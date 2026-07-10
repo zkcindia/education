@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "lmseducation.app"
-               BlueprintName = "lmseducation"
-               ReferencedContainer = "container:lmseducation.xcodeproj">
+               BuildableName = "CandleLightEducation.app"
+               BlueprintName = "CandleLightEducation"
+               ReferencedContainer = "container:CandleLightEducation.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "lmseducationTests.xctest"
-               BlueprintName = "lmseducationTests"
-               ReferencedContainer = "container:lmseducation.xcodeproj">
+               BuildableName = "CandleLightEducationTests.xctest"
+               BlueprintName = "CandleLightEducationTests"
+               ReferencedContainer = "container:CandleLightEducation.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "lmseducation.app"
-            BlueprintName = "lmseducation"
-            ReferencedContainer = "container:lmseducation.xcodeproj">
+            BuildableName = "CandleLightEducation.app"
+            BlueprintName = "CandleLightEducation"
+            ReferencedContainer = "container:CandleLightEducation.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "lmseducation.app"
-            BlueprintName = "lmseducation"
-            ReferencedContainer = "container:lmseducation.xcodeproj">
+            BuildableName = "CandleLightEducation.app"
+            BlueprintName = "CandleLightEducation"
+            ReferencedContainer = "container:CandleLightEducation.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

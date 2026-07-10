@@ -88,7 +88,7 @@ export default function Index() {
           <>
             {userData && (
               <Text style={styles.title}>
-                {userData?.Education_board} - {userData?.class}
+    {userData?.class}
               </Text>
             )}
 

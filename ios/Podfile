@@ -34,7 +34,7 @@ install! 'cocoapods',
 
 prepare_react_native_project!
 
-target 'lmseducation' do
+target 'CandleLightEducation' do
   use_expo_modules!
   config = use_native_modules!
 
