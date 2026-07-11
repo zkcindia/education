@@ -8,159 +8,335 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 
 import React, { useEffect, useState } from 'react';
 import { COLOR } from '../../constants/Colors';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 
-// const API_URL = 'http://192.168.29.78:8000';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
-
-
-
 
 export default function MyProfileScreen() {
   const navigation = useNavigation();
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // DYNAMIC USER ID
+  const [imageUploading, setImageUploading] = useState(false);
   const [userId, setUserId] = useState(null);
 
-  // PROFILE STATE
   const [profile, setProfile] = useState({
     fullName: '',
     fathersName: '',
     email: '',
     phoneNumber: '',
     address: '',
-    dob: new Date(),
+    dob: '',
     gender: '',
     className: '',
     image: '',
   });
 
-  // GET LOGGED USER
+const getToken = async () => {
+  const access = await AsyncStorage.getItem('access');
+
+  console.log('ACCESS TOKEN USED:', access);
+
+  return access;
+};
+
   useEffect(() => {
     getUser();
   }, []);
 
+const getAccessToken = async () => {
+  const access = await AsyncStorage.getItem('access');
+const accessToken = await getToken();
+  const refresh = await AsyncStorage.getItem('refresh');
+  const refreshToken = await AsyncStorage.getItem('refresh_token');
+
+  console.log('access =>', access);
+  console.log('access_token =>', accessToken);
+  console.log('refresh =>', refresh);
+  console.log('refresh_token =>', refreshToken);
+
+  return access || accessToken;
+};
+
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) {
+      return '';
+    }
+
+    if (
+      imageUrl.startsWith('http://') ||
+      imageUrl.startsWith('https://')
+    ) {
+      return imageUrl;
+    }
+
+    return `${API_URL}${imageUrl}`;
+  };
+
   const getUser = async () => {
     try {
-      const user = await AsyncStorage.getItem('userData');
+      const userData = await AsyncStorage.getItem('userData');
 
-      if (user) {
-        const parsedUser = JSON.parse(user);
-
-        console.log('LOGIN USER:', parsedUser);
-
-        setUserId(parsedUser.id);
-
-        fetchProfile(parsedUser.id);
+      if (!userData) {
+        Alert.alert('Error', 'User data not found.');
+        setLoading(false);
+        return;
       }
+
+      const parsedUser = JSON.parse(userData);
+
+      console.log('LOGIN USER:', parsedUser);
+
+      const loggedUserId =
+        parsedUser?.id ||
+        parsedUser?.user_id ||
+        parsedUser?.user?.id;
+
+      if (!loggedUserId) {
+        Alert.alert('Error', 'User ID not found.');
+        setLoading(false);
+        return;
+      }
+
+      setUserId(loggedUserId);
+
+      await fetchProfile(loggedUserId);
     } catch (error) {
       console.log('USER ERROR:', error);
+
+      Alert.alert(
+        'Error',
+        'Logged user information load nahi hua.'
+      );
+
+      setLoading(false);
     }
   };
 
-  // FETCH PROFILE
   const fetchProfile = async (id) => {
     try {
       setLoading(true);
 
+      const accessToken = await getAccessToken();
+
       const response = await axios.get(
-`${API_URL}/user-data/${id}/`
+        `${API_URL}/user-data/${id}/`,
+        {
+          headers: accessToken
+            ? {
+                Authorization: `Bearer ${accessToken}`,
+              }
+            : {},
+        }
       );
 
       console.log('PROFILE DATA:', response.data);
 
-      const data = response.data;
+      const data = response.data?.data || response.data;
 
-      // MATCH API KEYS WITH UI KEYS
       setProfile({
-        fullName: data.name || '',
-        fathersName: data.father_name || '',
-        email: data.email || '',
-        phoneNumber: data.mobile
-          ? data.mobile.toString()
-          : '',
-        address: data.address || '',
-        dob: data.DOB ? new Date(data.DOB) : new Date(),
-        gender: data.gender || '',
-        className: '',
-        image: data.image
-          ? `${API_URL}${data.image}`
-          : '',
+        fullName:
+          data?.name ||
+          data?.fullName ||
+          data?.full_name ||
+          '',
+        fathersName:
+          data?.father_name ||
+          data?.fathersName ||
+          data?.fatherName ||
+          '',
+        email: data?.email || '',
+        phoneNumber: data?.mobile
+          ? String(data.mobile)
+          : data?.phoneNumber
+            ? String(data.phoneNumber)
+            : '',
+        address: data?.address || '',
+        dob: data?.DOB || data?.dob || '',
+        gender: data?.gender || '',
+        className:
+          data?.class ||
+          data?.class_name ||
+          data?.className ||
+          '',
+        image: getImageUrl(data?.image),
       });
     } catch (error) {
-      console.log('PROFILE FETCH ERROR:', error);
+      console.log(
+        'PROFILE FETCH ERROR:',
+        error.response?.data || error.message
+      );
+
+      Alert.alert(
+        'Error',
+        error.response?.data?.detail ||
+          'Profile data load nahi hua.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // DATE CHANGE
-  const handleDateChange = (event, selectedDate) => {
-    if (selectedDate) {
-      setProfile({
-        ...profile,
-        dob: selectedDate,
+  const selectProfileImage = async () => {
+    try {
+      console.log('CAMERA BUTTON CLICKED');
+
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      console.log('GALLERY PERMISSION:', permissionResult);
+
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Profile photo select karne ke liye gallery permission allow karo.'
+        );
+
+        return;
+      }
+
+      const result =
+        await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+
+      console.log('IMAGE PICKER RESULT:', result);
+
+      if (result.canceled) {
+        console.log('IMAGE SELECTION CANCELLED');
+        return;
+      }
+
+      if (!result.assets || result.assets.length === 0) {
+        Alert.alert('Error', 'Selected image nahi mili.');
+        return;
+      }
+
+      const selectedImage = result.assets[0];
+
+      console.log('SELECTED IMAGE:', selectedImage);
+
+      await uploadProfileImage(selectedImage);
+    } catch (error) {
+      console.log('IMAGE PICKER ERROR:', error);
+
+      Alert.alert(
+        'Error',
+        error.message || 'Image select nahi ho payi.'
+      );
+    }
+  };
+
+const uploadProfileImage = async (selectedImage) => {
+  try {
+    setImageUploading(true);
+
+    const accessToken = await getToken();
+
+    if (!accessToken) {
+      Alert.alert('Error', 'Access token nahi mila.');
+      return;
+    }
+
+    const imageUri = selectedImage?.uri;
+
+    if (!imageUri) {
+      Alert.alert('Error', 'Image URI nahi mili.');
+      return;
+    }
+
+    const fileName =
+      selectedImage?.fileName ||
+      `profile-${Date.now()}.jpg`;
+
+    const mimeType =
+      selectedImage?.mimeType || 'image/jpeg';
+
+    const formData = new FormData();
+
+    if (imageUri.startsWith('data:')) {
+      const blobResponse = await fetch(imageUri);
+      const blob = await blobResponse.blob();
+
+      formData.append('image', blob, fileName);
+    } else {
+      formData.append('image', {
+        uri: imageUri,
+        name: fileName,
+        type: mimeType,
       });
     }
 
-    setShowDatePicker(false);
-  };
+    const response = await axios.put(
+      `${API_URL}/update-profile-image/`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+        timeout: 30000,
+      }
+    );
 
-  // INPUT CHANGE
-  const handleInputChange = (field, value) => {
-    setProfile({
-      ...profile,
-      [field]: value,
-    });
-  };
+    console.log('UPLOAD RESPONSE:', response.data);
 
-  // UPDATE PROFILE
-  const handleSave = async () => {
-    try {
-const formData = {
-  fullName: profile.fullName,
-  fathersName: profile.fathersName,
-  email: profile.email,
+    const uploadedImage = response.data?.image;
 
-  mobile: profile.phoneNumber
-    ? Number(profile.phoneNumber)
-    : null,
+    if (uploadedImage) {
+      setProfile((prev) => ({
+        ...prev,
+        image: `${uploadedImage}?time=${Date.now()}`,
+      }));
+    }
 
-  dob: profile.dob.toISOString().split('T')[0],
-  address: profile.address,
-  gender: profile.gender,
+    Alert.alert(
+      'Success',
+      response.data?.message ||
+        'Profile image updated successfully.'
+    );
+  } catch (error) {
+    console.log(
+      'UPLOAD ERROR:',
+      error.response?.data || error.message
+    );
+
+    Alert.alert(
+      'Upload Failed',
+      error.response?.data?.detail ||
+        error.response?.data?.message ||
+        'Image upload nahi hui.'
+    );
+  } finally {
+    setImageUploading(false);
+  }
 };
 
-await axios.put(
-  `${API_URL}/update-user/${userId}/`,
-  formData
-);
-
-      setIsEditing(false);
-
-      alert('Profile Updated Successfully');
-
-      fetchProfile(userId);
-    } catch (error) {
-      console.log('UPDATE ERROR:', error);
-      alert('Update Failed');
+  const formatDob = (dob) => {
+    if (!dob) {
+      return '';
     }
+
+    const date = new Date(dob);
+
+    if (Number.isNaN(date.getTime())) {
+      return dob;
+    }
+
+    return date.toDateString();
   };
 
-  // LOADING
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
@@ -173,19 +349,13 @@ await axios.put(
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       {/* HEADER */}
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: COLOR.background,
-          padding: 20,
-          paddingTop: 30,
-        }}
-      >
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
           <Feather
             name="arrow-left"
             size={24}
@@ -193,197 +363,94 @@ await axios.put(
           />
         </TouchableOpacity>
 
-        <Text
-          style={{
-            fontSize: 18,
-            color: COLOR.white,
-          }}
-        >
-          My Profilee
+        <Text style={styles.headerTitle}>
+          My Profile
         </Text>
 
-        <TouchableOpacity onPress={() => setIsEditing(true)}>
-          <MaterialCommunityIcons
-            name="square-edit-outline"
-            size={24}
-            color={COLOR.white}
-          />
-        </TouchableOpacity>
+        <View style={styles.headerRightSpace} />
       </View>
 
-      <SafeAreaView
-        style={{
-          flex: 1,
-          marginTop: 10,
-          paddingHorizontal: 20,
-        }}
-      >
+      <SafeAreaView style={styles.safeArea}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={styles.scrollContent}
         >
-          {/* PROFILE IMAGE */}
-          <Image
-            source={{
-              uri:
-                profile.image ||
-                'https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg',
-            }}
-            style={{
-              width: 100,
-              height: 100,
-              borderRadius: 50,
-              alignSelf: 'center',
-            }}
-          />
+          {/* ONLY PROFILE IMAGE EDITABLE */}
+          <View style={styles.profileImageWrapper}>
+            <Image
+              source={{
+                uri:
+                  profile.image ||
+                  'https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg',
+              }}
+              style={styles.profileImage}
+            />
 
-          <View
-            style={{
-              flexDirection: 'column',
-              marginTop: 20,
-              gap: 10,
-            }}
-          >
-            {/* FULL NAME */}
-            <View style={styles.myCard}>
-              <Text style={styles.label}>Full Name</Text>
-
-              <TextInput
-                style={styles.input}
-                editable={isEditing}
-                value={profile.fullName}
-                onChangeText={(value) =>
-                  handleInputChange('fullName', value)
-                }
-              />
-            </View>
-
-            {/* FATHER NAME */}
-            <View style={styles.myCard}>
-              <Text style={styles.label}>Father's Name</Text>
-
-              <TextInput
-                style={styles.input}
-                editable={isEditing}
-                value={profile.fathersName}
-                onChangeText={(value) =>
-                  handleInputChange('fathersName', value)
-                }
-              />
-            </View>
-
-            {/* EMAIL */}
-            <View style={styles.myCard}>
-              <Text style={styles.label}>Email</Text>
-
-              <TextInput
-                style={styles.input}
-                editable={isEditing}
-                value={profile.email}
-                onChangeText={(value) =>
-                  handleInputChange('email', value)
-                }
-              />
-            </View>
-
-            {/* PHONE */}
-            <View style={styles.myCard}>
-              <Text style={styles.label}>Phone Number</Text>
-
-              <TextInput
-                style={styles.input}
-                editable={isEditing}
-                value={profile.phoneNumber}
-                keyboardType="phone-pad"
-                onChangeText={(value) =>
-                  handleInputChange('phoneNumber', value)
-                }
-              />
-            </View>
-
-            {/* ADDRESS */}
-            <View style={styles.myCard}>
-              <Text style={styles.label}>Address</Text>
-
-              <TextInput
-                style={styles.input}
-                editable={isEditing}
-                value={profile.address}
-                onChangeText={(value) =>
-                  handleInputChange('address', value)
-                }
-              />
-            </View>
-
-            {/* DOB */}
             <TouchableOpacity
-              style={styles.myCard}
-              disabled={!isEditing}
-              onPress={() => setShowDatePicker(true)}
+              style={styles.imageEditButton}
+              onPress={selectProfileImage}
+              disabled={imageUploading}
+              activeOpacity={0.7}
             >
-              <Text style={styles.label}>DOB</Text>
-
-              <Text
-                style={{
-                  fontSize: 16,
-                  marginTop: 3,
-                }}
-              >
-                {profile.dob.toDateString()}
-              </Text>
+              {imageUploading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={COLOR.white}
+                />
+              ) : (
+                <MaterialCommunityIcons
+                  name="camera"
+                  size={21}
+                  color={COLOR.white}
+                />
+              )}
             </TouchableOpacity>
+          </View>
 
-            {showDatePicker && (
-              <DateTimePicker
-                value={profile.dob}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-              />
-            )}
+          <Text style={styles.imageHint}>
+            Tap camera icon to change profile photo
+          </Text>
 
-            {/* GENDER */}
-            <View style={styles.myCard}>
-              <Text style={styles.label}>Gender</Text>
+          <View style={styles.formContainer}>
+            <ProfileField
+              label="Full Name"
+              value={profile.fullName}
+            />
 
-              <Picker
-                selectedValue={profile.gender}
-                enabled={isEditing}
-                onValueChange={(value) =>
-                  handleInputChange('gender', value)
-                }
-              >
-                <Picker.Item label="Male" value="Male" />
-                <Picker.Item label="Female" value="Female" />
-                <Picker.Item label="Other" value="Other" />
-              </Picker>
-            </View>
+            <ProfileField
+              label="Father's Name"
+              value={profile.fathersName}
+            />
 
-            {/* CLASS */}
-            <View style={styles.myCard}>
-              <Text style={styles.label}>Class Name</Text>
+            <ProfileField
+              label="Email"
+              value={profile.email}
+            />
 
-              <TextInput
-                style={styles.input}
-                editable={isEditing}
-                value={profile.className}
-                onChangeText={(value) =>
-                  handleInputChange('className', value)
-                }
-              />
-            </View>
+            <ProfileField
+              label="Phone Number"
+              value={profile.phoneNumber}
+            />
 
-            {/* SAVE BUTTON */}
-            {isEditing && (
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleSave}
-              >
-                <Text style={styles.saveButtonText}>
-                  Save
-                </Text>
-              </TouchableOpacity>
-            )}
+            <ProfileField
+              label="Address"
+              value={profile.address}
+            />
+
+            <ProfileField
+              label="DOB"
+              value={formatDob(profile.dob)}
+            />
+
+            <ProfileField
+              label="Gender"
+              value={profile.gender}
+            />
+
+            <ProfileField
+              label="Class Name"
+              value={profile.className}
+            />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -391,42 +458,126 @@ await axios.put(
   );
 }
 
+const ProfileField = ({ label, value }) => {
+  return (
+    <View style={styles.myCard}>
+      <Text style={styles.label}>
+        {label}
+      </Text>
+
+      <TextInput
+        style={styles.input}
+        value={value || ''}
+        editable={false}
+        selectTextOnFocus={false}
+      />
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLOR.background,
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 20,
+  },
+
+  headerTitle: {
+    fontSize: 18,
+    color: COLOR.white,
+    fontWeight: '600',
+  },
+
+  headerRightSpace: {
+    width: 24,
+  },
+
+  safeArea: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+
+  scrollContent: {
+    paddingTop: 25,
+    paddingBottom: 100,
+  },
+
+  profileImageWrapper: {
+    width: 110,
+    height: 110,
+    alignSelf: 'center',
+    position: 'relative',
+  },
+
+  profileImage: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: '#dddddd',
+    borderWidth: 3,
+    borderColor: COLOR.white,
+  },
+
+  imageEditButton: {
+    position: 'absolute',
+    right: 0,
+    bottom: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLOR.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: COLOR.white,
+  },
+
+  imageHint: {
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 22,
+    color: COLOR.grey,
+    fontSize: 13,
+  },
+
+  formContainer: {
+    width: '100%',
+  },
+
   myCard: {
     width: '100%',
     backgroundColor: COLOR.white,
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+
+  label: {
+    fontSize: 14,
+    color: COLOR.grey,
+    marginBottom: 4,
   },
 
   input: {
     width: '100%',
     fontSize: 16,
-  },
-
-  label: {
-    fontSize: 16,
-    color: COLOR.grey,
-    marginBottom: 5,
-  },
-
-  saveButton: {
-    backgroundColor: COLOR.background,
-    padding: 15,
-    borderRadius: 5,
-    marginTop: 20,
-    alignItems: 'center',
-  },
-
-  saveButtonText: {
-    color: COLOR.white,
-    fontSize: 18,
+    color: '#222222',
+    paddingVertical: 3,
   },
 });
