@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: width * 0.15,
     borderRadius: width * 0.1,
     zIndex: 1,
-    marginBottom: height * 0.02,
+    marginBottom: height * 0.16,
     marginTop: height * 0.01,
   },
   buttonText: {

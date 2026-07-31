@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import React, { useCallback, useState } from 'react';
-import { useNavigation } from 'expo-router';
+import { useNavigation, router } from 'expo-router';
 import { COLOR } from './../../../../constants/Colors';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -72,11 +72,19 @@ export default function Index() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={{ width: 24 }} />
-        <Text style={styles.headerTitle}>My Subjects</Text>
-        <View style={{ width: 24 }} />
-      </View>
+<View style={styles.header}>
+  <TouchableOpacity 
+    onPress={() => router.push('/top-scorers')}
+    style={styles.backButton}
+    activeOpacity={0.7}
+  >
+    <Feather name="arrow-left" size={24} color={COLOR.white} />
+  </TouchableOpacity>
+  
+  <Text style={styles.headerTitle}>My Subjects</Text>
+  
+  <View style={{ width: 24 }} />
+</View>
 
       <View style={styles.body}>
         {loader ? (
@@ -219,4 +227,8 @@ const styles = StyleSheet.create({
     fontFamily: 'roboto-medium',
     color: '#777',
   },
+  backButton: {
+  padding: 4,
+  width: 40,
+},
 });

@@ -140,7 +140,8 @@ useEffect(() => {
       {/* Floating Action Button - Start Your Test */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/classes')}
+        // onPress={() => router.push('/classes')}
+          onPress={() => router.push('/top-scorers')}
         activeOpacity={0.85}
       >
         <View style={styles.fabLabel}>
