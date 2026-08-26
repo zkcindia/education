@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
+
 export default function TopScorersPage() {
   const [activeTab, setActiveTab] = useState('month');
 
