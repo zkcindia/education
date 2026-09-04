@@ -18,7 +18,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/newlogo.png",
+        "foregroundImage": "./assets/images/logo1.jpeg",
         "backgroundColor": "#ffffff"
       },
       "package": "com.tktech.candel_lightcom"

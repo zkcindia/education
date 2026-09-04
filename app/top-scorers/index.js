@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// TopScorersPage.js
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,31 +9,30 @@ import {
   Image,
   Dimensions,
   SafeAreaView,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { Feather, MaterialIcons, Ionicons, AntDesign } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { getTopStudents, checkTokenStatus } from '../../constants/api/apiClass';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
-
 export default function TopScorersPage() {
   const [activeTab, setActiveTab] = useState('month');
+  const [topStudents, setTopStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState({
+    avgScore: 0,
+    growth: '0%',
+    topCount: 0
+  });
 
-  // Sample data
-  const topStudents = [
-    { id: 1, name: 'Rahul Kumar', score: 98, class: '10th A', image: '' },
-    { id: 2, name: 'Priya Sharma', score: 95, class: '10th B', image: '' },
-    { id: 3, name: 'Amit Singh', score: 92, class: '9th A', image: '' },
-    { id: 4, name: 'Sneha Patel', score: 88, class: '10th A', image: '' },
-    { id: 5, name: 'Vikram Raj', score: 85, class: '9th B', image: '' },
-    { id: 6, name: 'Ananya Reddy', score: 82, class: '8th A', image: '' },
-    { id: 7, name: 'Karan Mehta', score: 78, class: '10th B', image: '' },
-    { id: 8, name: 'Neha Jain', score: 75, class: '9th A', image: '' },
-    { id: 9, name: 'Ravi Desai', score: 72, class: '8th B', image: '' },
-    { id: 10, name: 'Pooja Nair', score: 68, class: '7th A', image: '' },
-  ];
-
+  // Static chart data
   const monthlyData = [
     { month: 'Jan', score: 65 },
     { month: 'Feb', score: 72 },
@@ -51,13 +51,119 @@ export default function TopScorersPage() {
     { month: '2024', score: 98 },
   ];
 
-  const chartData = activeTab === 'month' ? monthlyData : yearlyData;
-  const maxScore = Math.max(...chartData.map(item => item.score));
+  // Check token on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const tokenStatus = await checkTokenStatus();
+      console.log('Token Status:', tokenStatus);
+      
+      if (!tokenStatus?.accessToken) {
+        console.log('No access token found. Redirecting to login...');
+        Alert.alert(
+          'Session Expired',
+          'Please login to continue.',
+          [
+            { 
+              text: 'Login', 
+              onPress: () => {
+                router.replace('/signIn');
+              }
+            }
+          ]
+        );
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
-  const getStatus = (index) => {
-    if (index < 2) return { text: 'Online', color: '#16a34a' };
-    if (index === 2) return { text: '5 min ago', color: '#6b7280' };
-    return { text: `${index * 3} min ago`, color: '#9ca3af' };
+  // Fetch top students
+  const fetchTopStudents = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      const studentsData = await getTopStudents();
+      console.log('Students Data:', studentsData);
+      
+      if (studentsData && studentsData.students) {
+        setTopStudents(studentsData.students);
+        
+        const scores = studentsData.students.map(s => s.score);
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const firstScore = scores[0] || 0;
+        const lastScore = scores[scores.length - 1] || 1;
+        const growthPercentage = ((firstScore - lastScore) / lastScore * 100);
+        
+        setStats({
+          avgScore: Math.round(avg),
+          growth: (growthPercentage > 0 ? '↑' : '↓') + Math.abs(Math.round(growthPercentage)) + '%',
+          topCount: studentsData.students.length
+        });
+      } else {
+        console.log('No students data received');
+        setTopStudents([]);
+      }
+
+    } catch (err) {
+      console.error('Fetch Error:', err);
+      
+      if (err.message.includes('login') || err.message.includes('session')) {
+        Alert.alert(
+          'Session Expired',
+          'Please login again to continue.',
+          [
+            { 
+              text: 'Login', 
+              onPress: () => {
+                AsyncStorage.removeItem('access');
+                AsyncStorage.removeItem('refresh');
+                router.replace('/signIn');
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          err.message || 'Failed to load data. Please try again.',
+          [{ text: 'Retry', onPress: fetchTopStudents }]
+        );
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTopStudents();
+  }, [fetchTopStudents]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchTopStudents();
+  }, [fetchTopStudents]);
+
+  // Helper Functions
+  const getStatus = (student) => {
+    if (!student) return { text: 'Offline', color: '#9ca3af' };
+    
+    if (student.status === 'online') {
+      return { text: 'Online', color: '#16a34a' };
+    }
+    if (student.status === 'idle') {
+      return { text: 'Idle', color: '#f59e0b' };
+    }
+    if (student.status === 'offline') {
+      return { text: 'Offline', color: '#9ca3af' };
+    }
+    if (student.lastActive) {
+      const minutes = Math.floor((Date.now() - new Date(student.lastActive)) / 60000);
+      if (minutes < 5) return { text: 'Online', color: '#16a34a' };
+      if (minutes < 30) return { text: `${minutes} min ago`, color: '#6b7280' };
+      return { text: `${Math.floor(minutes / 60)}h ago`, color: '#9ca3af' };
+    }
+    return { text: 'Offline', color: '#9ca3af' };
   };
 
   const getMultiplier = (index) => {
@@ -68,24 +174,27 @@ export default function TopScorersPage() {
   };
 
   const getRankStyle = (index) => {
-    if (index === 0)
+    if (index === 0) {
       return {
         label: '1',
         wrapper: ['#fbbf24', '#fb923c'],
         textColor: '#c2410c',
       };
-    if (index === 1)
+    }
+    if (index === 1) {
       return {
         label: '2',
         wrapper: ['#e2e8f0', '#cbd5e1'],
         textColor: '#475569',
       };
-    if (index === 2)
+    }
+    if (index === 2) {
       return {
         label: '3',
         wrapper: ['#fb923c', '#f59e0b'],
         textColor: '#9a3412',
       };
+    }
     return {
       label: index + 1,
       wrapper: ['#dbeafe', '#bfdbfe'],
@@ -93,6 +202,7 @@ export default function TopScorersPage() {
     };
   };
 
+  // Custom Bar Chart Component
   const CustomBarChart = ({ data }) => {
     const maxValue = Math.max(...data.map(item => item.score));
     const barColors = ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#3b82f6', '#60a5fa'];
@@ -126,6 +236,28 @@ export default function TopScorersPage() {
     );
   };
 
+  // Loading State
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Feather name="arrow-left" size={24} color="#1e3a8a" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>🏆 Top Scorers</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text style={styles.loadingText}>Loading top students...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -137,114 +269,149 @@ export default function TopScorersPage() {
           <Feather name="arrow-left" size={24} color="#1e3a8a" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>🏆 Top Scorers</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity 
+          style={styles.headerRefreshButton}
+          onPress={onRefresh}
+        >
+          <Feather name="refresh-cw" size={20} color="#1e3a8a" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#3b82f6']}
+            tintColor="#3b82f6"
+          />
+        }
       >
         {/* Leaderboard List */}
         <View style={styles.listContainer}>
           <View style={styles.toolbar}>
             <View style={styles.toolbarLeft}>
               <Ionicons name="time-outline" size={14} color="#1e40af" />
-              <Text style={styles.toolbarText}>Top 10 Scorers</Text>
+              <Text style={styles.toolbarText}>
+                Top {topStudents.length} Scorers
+              </Text>
             </View>
-            <TouchableOpacity style={styles.refreshButton}>
-              <Feather name="refresh-cw" size={14} color="#2563eb" />
+            <TouchableOpacity 
+              style={styles.refreshButton}
+              onPress={onRefresh}
+              disabled={refreshing}
+            >
+              <Feather 
+                name="refresh-cw" 
+                size={14} 
+                color="#2563eb" 
+              />
             </TouchableOpacity>
           </View>
 
-          {topStudents.map((student, index) => {
-            const status = getStatus(index);
-            const multiplier = getMultiplier(index);
-            const rank = getRankStyle(index);
+          {topStudents.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No students found</Text>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={fetchTopStudents}
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            topStudents.map((student, index) => {
+              const status = getStatus(student);
+              const multiplier = getMultiplier(index);
+              const rank = getRankStyle(index);
 
-            return (
-              <View key={student.id ?? `${student.name}-${index}`}>
-                {index === 5 && (
-                  <View style={styles.dividerContainer}>
-                    <View style={styles.dividerLine} />
-                    <View style={styles.dividerBadge}>
-                      <Text style={styles.dividerText}>▲ More Students ▲</Text>
-                    </View>
-                    <View style={styles.dividerLine} />
-                  </View>
-                )}
-
-                <View
-                  style={[
-                    styles.studentRow,
-                    index < 3 && styles.topStudentRow,
-                  ]}
-                >
-                  <LinearGradient
-                    colors={rank.wrapper}
-                    style={styles.rankBadge}
-                  >
-                    <Text style={[styles.rankText, { color: rank.textColor }]}>
-                      {rank.label}
-                    </Text>
-                  </LinearGradient>
-
-                  <View style={styles.avatarContainer}>
-                    {student.image ? (
-                      <Image
-                        source={{ uri: student.image }}
-                        style={styles.avatar}
-                      />
-                    ) : (
-                      <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                        <Text style={styles.avatarText}>
-                          {student.name?.charAt(0)?.toUpperCase() || 'S'}
-                        </Text>
+              return (
+                <View key={student.id || student._id || `${student.name}-${index}`}>
+                  {index === 5 && topStudents.length > 5 && (
+                    <View style={styles.dividerContainer}>
+                      <View style={styles.dividerLine} />
+                      <View style={styles.dividerBadge}>
+                        <Text style={styles.dividerText}>▲ More Students ▲</Text>
                       </View>
-                    )}
-                    {index < 3 && (
-                      <View style={styles.starBadge}>
-                        <Text style={styles.starText}>✨</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.studentInfo}>
-                    <Text style={styles.studentName} numberOfLines={1}>
-                      {student.name}
-                    </Text>
-                    <View style={styles.studentMeta}>
-                      <Text style={[styles.statusText, { color: status.color }]}>
-                        {status.text}
-                      </Text>
-                      <Text style={styles.classText}>{student.class}</Text>
-                    </View>
-                  </View>
-
-                  {multiplier && (
-                    <View style={styles.multiplierContainer}>
-                      <LinearGradient
-                        colors={['#3b82f6', '#2563eb']}
-                        style={styles.multiplierBadge}
-                      >
-                        <Ionicons name="flash" size={16} color="white" />
-                      </LinearGradient>
-                      <View style={styles.multiplierLabel}>
-                        <Text style={styles.multiplierText}>{multiplier}</Text>
-                      </View>
+                      <View style={styles.dividerLine} />
                     </View>
                   )}
 
-                  <View style={styles.scoreContainer}>
-                    <Text style={styles.scoreIcon}>✹</Text>
-                    <Text style={styles.scoreText}>{student.score}</Text>
+                  <View
+                    style={[
+                      styles.studentRow,
+                      index < 3 && styles.topStudentRow,
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={rank.wrapper}
+                      style={styles.rankBadge}
+                    >
+                      <Text style={[styles.rankText, { color: rank.textColor }]}>
+                        {rank.label}
+                      </Text>
+                    </LinearGradient>
+
+                    <View style={styles.avatarContainer}>
+                      {student.avatar || student.image ? (
+                        <Image
+                          source={{ uri: student.avatar || student.image }}
+                          style={styles.avatar}
+                        />
+                      ) : (
+                        <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                          <Text style={styles.avatarText}>
+                            {student.name?.charAt(0)?.toUpperCase() || 'S'}
+                          </Text>
+                        </View>
+                      )}
+                      {index < 3 && (
+                        <View style={styles.starBadge}>
+                          <Text style={styles.starText}>✨</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.studentInfo}>
+                      <Text style={styles.studentName} numberOfLines={1}>
+                        {student.name}
+                      </Text>
+                      <View style={styles.studentMeta}>
+                        <Text style={[styles.statusText, { color: status.color }]}>
+                          {status.text}
+                        </Text>
+                        <Text style={styles.classText}>{student.class || student.grade}</Text>
+                      </View>
+                    </View>
+
+                    {multiplier && (
+                      <View style={styles.multiplierContainer}>
+                        <LinearGradient
+                          colors={['#3b82f6', '#2563eb']}
+                          style={styles.multiplierBadge}
+                        >
+                          <Ionicons name="flash" size={16} color="white" />
+                        </LinearGradient>
+                        <View style={styles.multiplierLabel}>
+                          <Text style={styles.multiplierText}>{multiplier}</Text>
+                        </View>
+                      </View>
+                    )}
+
+                    <View style={styles.scoreContainer}>
+                      <Text style={styles.scoreIcon}>✹</Text>
+                      <Text style={styles.scoreText}>{student.score}</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })
+          )}
         </View>
 
-        {/* Chart Section */}
+        {/* Chart Section - Static */}
         <View style={styles.chartSection}>
           <View style={styles.chartHeader}>
             <View style={styles.chartTitleContainer}>
@@ -289,20 +456,22 @@ export default function TopScorersPage() {
 
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, styles.statBlue]}>
-              <Text style={styles.statValue}>92</Text>
+              <Text style={styles.statValue}>{stats.avgScore}</Text>
               <Text style={styles.statLabel}>Avg Score</Text>
             </View>
             <View style={[styles.statCard, styles.statGreen]}>
-              <Text style={styles.statValue}>↑18%</Text>
+              <Text style={styles.statValue}>{stats.growth}</Text>
               <Text style={styles.statLabel}>Growth</Text>
             </View>
             <View style={[styles.statCard, styles.statPurple]}>
-              <Text style={styles.statValue}>10</Text>
+              <Text style={styles.statValue}>{stats.topCount}</Text>
               <Text style={styles.statLabel}>Top</Text>
             </View>
           </View>
 
-          <CustomBarChart data={chartData} />
+          <CustomBarChart 
+            data={activeTab === 'month' ? monthlyData : yearlyData} 
+          />
         </View>
       </ScrollView>
 
@@ -348,6 +517,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1e3a8a',
+  },
+  headerRefreshButton: {
+    padding: 4,
+    width: 40,
+    alignItems: 'flex-end',
   },
   scrollContent: {
     padding: 16,
@@ -674,6 +848,38 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#6b7280',
     marginTop: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#1e3a8a',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
   fab: {
     position: 'absolute',

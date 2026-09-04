@@ -33,6 +33,7 @@ const QuizScreen = () => {
 
   const [locked, setLocked] = useState(false);
   const [lockInfo, setLockInfo] = useState(null);
+  const [noQuestions, setNoQuestions] = useState(false);
 
   const batchSize = 20;
   const [batchNumber, setBatchNumber] = useState(1);
@@ -49,9 +50,28 @@ const QuizScreen = () => {
       setLoading(true);
       setLocked(false);
       setLockInfo(null);
+      setNoQuestions(false);
 
-      const response = await getLastQuizAttempt();
-      const last = response.data?.data;
+      // First fetch questions to check if any exist
+      const response = await fetchQuiz(id);
+      let data = [];
+
+      if (Array.isArray(response.data)) {
+        data = response.data;
+      } else if (Array.isArray(response.data?.data)) {
+        data = response.data.data;
+      }
+
+      // ✅ Check if there are no questions
+      if (!data || data.length === 0) {
+        setNoQuestions(true);
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Questions exist, now check attempts
+      const attemptResponse = await getLastQuizAttempt();
+      const last = attemptResponse.data?.data;
 
       console.log('LAST QUIZ ATTEMPT:', last);
       console.log('CURRENT SUBJECT ID:', id);
@@ -88,9 +108,19 @@ const QuizScreen = () => {
         }
       }
 
-      await fetchQuestions();
+      // ✅ Set questions and start quiz
+      setAllQuestions(data);
+      setTotalBatches(Math.ceil(data.length / batchSize));
+
+      if (data.length > 0) {
+        loadBatch(1, data);
+      } else {
+        setNoQuestions(true);
+        setLoading(false);
+      }
     } catch (error) {
       console.log('Attempt check error:', error.response?.data || error.message);
+      // ✅ On error, try to fetch questions anyway
       await fetchQuestions();
     }
   };
@@ -107,16 +137,25 @@ const QuizScreen = () => {
         data = response.data.data;
       }
 
+      // ✅ Check if no questions
+      if (!data || data.length === 0) {
+        setNoQuestions(true);
+        setLoading(false);
+        return;
+      }
+
       setAllQuestions(data);
       setTotalBatches(Math.ceil(data.length / batchSize));
 
       if (data.length > 0) {
         loadBatch(1, data);
       } else {
+        setNoQuestions(true);
         setLoading(false);
       }
     } catch (error) {
       console.log('QUIZ ERROR:', error.response?.data || error.message);
+      setNoQuestions(true);
       setLoading(false);
       Alert.alert('Error', 'Failed to load questions');
     }
@@ -133,11 +172,12 @@ const QuizScreen = () => {
     setScore(0);
     setSelectedAnswer(null);
     setTimer(30);
+    setNoQuestions(false);
     setLoading(false);
   };
 
   useEffect(() => {
-    if (loading || locked || questions.length === 0 || isSubmitting) return;
+    if (loading || locked || questions.length === 0 || isSubmitting || noQuestions) return;
 
     if (timer > 0) {
       const intervalId = setInterval(() => {
@@ -151,7 +191,7 @@ const QuizScreen = () => {
     setTimeout(() => {
       handleAnswer();
     }, 100);
-  }, [timer, loading, locked, questions, isSubmitting]);
+  }, [timer, loading, locked, questions, isSubmitting, noQuestions]);
 
   const handleAnswer = async () => {
     if (isSubmitting || locked || questions.length === 0) return;
@@ -239,6 +279,28 @@ const QuizScreen = () => {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLOR.background} />
         <Text style={styles.loadingText}>Checking quiz status...</Text>
+      </View>
+    );
+  }
+
+  // ✅ Show "No Questions" screen when there are no questions
+  if (noQuestions) {
+    return (
+      <View style={styles.lockContainer}>
+        <View style={styles.lockCard}>
+          <Text style={styles.lockIcon}>📝</Text>
+          <Text style={styles.lockTitle}>No Questions Available</Text>
+          <Text style={styles.lockMessage}>
+            There are currently no questions available for this subject. Please check back later or contact your instructor.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.homeButton}
+            onPress={() => navigation.navigate('(drawer)')}
+          >
+            <Text style={styles.homeButtonText}>Go To Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }

@@ -11,23 +11,61 @@ import {
 import * as Animatable from "react-native-animatable";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { fetchSloka } from "../../../constants/api/apiHome"; // Import the API function
+import { fetchSloka } from "../../../constants/api/apiHome";
 
 const { width, height } = Dimensions.get("window");
 
-export default function WordOfDay() {
-  const [sentenceData, setSentenceData] = useState({
+// ✅ Static fallback data with multiple options
+const STATIC_WORDS = [
+  {
     title: "Word of the Day",
-    description: "",
-    sloka: "",
-    meaning: "",
-  });
+    description: "Wisdom is not a product of schooling but of the lifelong attempt to acquire it.",
+    sloka: "Knowledge is power",
+    meaning: "The more you learn, the more you can achieve"
+  },
+  {
+    title: "Word of the Day",
+    description: "The only true wisdom is in knowing you know nothing.",
+    sloka: "Stay curious",
+    meaning: "Curiosity leads to continuous learning and growth"
+  },
+  {
+    title: "Word of the Day",
+    description: "Education is the most powerful weapon which you can use to change the world.",
+    sloka: "Learn to lead",
+    meaning: "Education empowers you to make a difference"
+  },
+  {
+    title: "Word of the Day",
+    description: "The beautiful thing about learning is that nobody can take it away from you.",
+    sloka: "Learn and grow",
+    meaning: "Knowledge is the only thing that stays with you forever"
+  },
+  {
+    title: "Word of the Day",
+    description: "Success is the sum of small efforts repeated day in and day out.",
+    sloka: "Never give up",
+    meaning: "Consistency and persistence lead to success"
+  }
+];
+
+export default function WordOfDay() {
+  const [sentenceData, setSentenceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dataSource, setDataSource] = useState('static');
 
   useEffect(() => {
     loadSlokaData();
   }, []);
+
+  // ✅ Function to get a static word based on today's date
+  const getStaticWordForToday = () => {
+    const today = new Date();
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+    const index = dayOfYear % STATIC_WORDS.length;
+    return STATIC_WORDS[index];
+  };
 
   const loadSlokaData = async () => {
     try {
@@ -35,37 +73,92 @@ export default function WordOfDay() {
       setError(null);
       
       const response = await fetchSloka();
+      console.log('📚 API Response:', JSON.stringify(response, null, 2));
       
-      if (response && response.data) {
-        // Assuming API returns data in this structure
-        // Adjust based on your actual API response structure
+      // ✅ Check if API call was successful and returned data
+      if (response) {
+        // ✅ Case 1: API returned success with data
+        if (response.status === true && response.data) {
+          const data = response.data;
+          
+          // Check if line exists and is not empty
+          if (data.line && data.line.trim() !== "") {
+            setSentenceData({
+              // title: "Word of the Day",
+              description: data.line,
+              sloka: data.line,
+              meaning: data.meaning || "",
+            });
+            setDataSource('dynamic');
+            console.log('✅ Using dynamic word of the day');
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // ✅ Case 2: API returned status false (no data available)
+        if (response.status === false) {
+          console.log(`📅 ${response.message || 'No data available'}`);
+          
+          // Check specific message
+          if (response.message === "No Sloka available for today.") {
+            console.log('📅 No sloka available for today, showing static word');
+          }
+          
+          // Use static data
+          const staticWord = getStaticWordForToday();
+          setSentenceData({
+            title: staticWord.title,
+            description: staticWord.description,
+            sloka: staticWord.sloka,
+            meaning: staticWord.meaning,
+          });
+          setDataSource('static');
+          setLoading(false);
+          return;
+        }
+        
+        // ✅ Case 3: API returned something else unexpected
+        console.warn('⚠️ Unexpected API response format:', response);
+        const staticWord = getStaticWordForToday();
         setSentenceData({
-          // title: response.data.title || "Word of the Day",
-          description: response.data.description || response.data.sloka || "",
-          sloka: response.data.sloka || "",
-          meaning: response.data.meaning || "",
+          title: staticWord.title,
+          description: staticWord.description,
+          sloka: staticWord.sloka,
+          meaning: staticWord.meaning,
         });
+        setDataSource('static');
+        setLoading(false);
+        return;
+        
       } else {
-        // Fallback data if API fails
+        // ✅ Case 4: No response or null response
+        console.warn('⚠️ No response from API');
+        const staticWord = getStaticWordForToday();
         setSentenceData({
-          title: "Word of the Day",
-          description: "Learning something new every day makes you stronger than yesterday. Keep growing and never stop learning!",
-          sloka: "",
-          meaning: "",
+          title: staticWord.title,
+          description: staticWord.description,
+          sloka: staticWord.sloka,
+          meaning: staticWord.meaning,
         });
+        setDataSource('static');
+        setLoading(false);
+        return;
       }
+      
     } catch (error) {
-      console.error("Error fetching sloka:", error);
-      setError("Failed to load today's sloka. Please try again.");
-      // Set fallback data
+      console.error("❌ Error fetching sloka:", error);
+      // ✅ Fallback to static data on error
+      const staticWord = getStaticWordForToday();
       setSentenceData({
-        title: "Word of the Day",
-        description: "Learning something new every day makes you stronger than yesterday. Keep growing and never stop learning!",
-        sloka: "",
-        meaning: "",
+        title: staticWord.title,
+        description: staticWord.description,
+        sloka: staticWord.sloka,
+        meaning: staticWord.meaning,
       });
-    } finally {
+      setDataSource('static');
       setLoading(false);
+      // Don't set error state here since we have fallback data
     }
   };
 
@@ -73,69 +166,61 @@ export default function WordOfDay() {
     router.push("/(drawer)/(studentIntro)/SpecialDay");
   };
 
-  // Render different content based on API response
+  const handleRetry = () => {
+    loadSlokaData();
+  };
+
+  // ✅ Render content
   const renderContent = () => {
-    if (sentenceData.sloka) {
-      // If API returns sloka with meaning
+    if (!sentenceData) {
       return (
-        <>
-          <Animatable.View
-            animation="bounceIn"
-            delay={800}
-            style={styles.imageContainer}
-          >
-            <Image
-              source={require("../../../assets/images/Isolation_Mode.png")}
-              style={styles.image}
-            />
-          </Animatable.View>
-
-          <Animatable.View
-            animation="fadeInUp"
-            delay={1000}
-            style={styles.messageContainer}
-          >
-            <Text style={styles.title}>{sentenceData.title}</Text>
-            
-            <Animatable.Text
-              animation="pulse"
-              easing="ease-out"
-              iterationCount="infinite"
-              style={styles.slokaText}
-            >
-              {sentenceData.sloka}
-            </Animatable.Text>
-
-            {sentenceData.meaning && (
-              <Text style={styles.meaningText}>
-                Meaning: {sentenceData.meaning}
-              </Text>
-            )}
-          </Animatable.View>
-        </>
+        <View style={styles.centerBox}>
+          <Text style={styles.errorText}>No data available</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       );
-    } else {
-      // If API returns description (fallback or different format)
-      return (
-        <>
-          <Animatable.View
-            animation="bounceIn"
-            delay={800}
-            style={styles.imageContainer}
-          >
-            <Image
-              source={require("../../../assets/images/Isolation_Mode.png")}
-              style={styles.image}
-            />
-          </Animatable.View>
+    }
 
-          <Animatable.View
-            animation="fadeInUp"
-            delay={1000}
-            style={styles.messageContainer}
-          >
-            <Text style={styles.title}>{sentenceData.title}</Text>
+    return (
+      <>
+        <Animatable.View
+          animation="bounceIn"
+          delay={800}
+          style={styles.imageContainer}
+        >
+          <Image
+            source={require("../../../assets/images/Isolation_Mode.png")}
+            style={styles.image}
+          />
+        </Animatable.View>
 
+        <Animatable.View
+          animation="fadeInUp"
+          delay={1000}
+          style={styles.messageContainer}
+        >
+          <Text style={styles.title}>{sentenceData.title}</Text>
+
+          {sentenceData.sloka ? (
+            <>
+              <Animatable.Text
+                animation="pulse"
+                easing="ease-out"
+                iterationCount="infinite"
+                style={styles.slokaText}
+              >
+                {sentenceData.sloka}
+              </Animatable.Text>
+
+              {sentenceData.meaning && (
+                <Text style={styles.meaningText}>
+                  Meaning: {sentenceData.meaning}
+                </Text>
+              )}
+            </>
+          ) : (
             <Animatable.Text
               animation="pulse"
               easing="ease-out"
@@ -144,10 +229,12 @@ export default function WordOfDay() {
             >
               {sentenceData.description}
             </Animatable.Text>
-          </Animatable.View>
-        </>
-      );
-    }
+          )}
+
+         
+        </Animatable.View>
+      </>
+    );
   };
 
   return (
@@ -168,7 +255,7 @@ export default function WordOfDay() {
       ) : error ? (
         <View style={styles.centerBox}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadSlokaData}>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -292,5 +379,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: width * 0.04,
     fontWeight: "bold",
+  },
+  dataSourceBadge: {
+    marginTop: height * 0.02,
+    backgroundColor: 'rgba(0, 48, 150, 0.1)',
+    paddingVertical: height * 0.008,
+    paddingHorizontal: width * 0.05,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 48, 150, 0.2)',
+  },
+  dataSourceText: {
+    fontSize: width * 0.032,
+    color: "#003096",
+    fontWeight: "500",
   },
 });

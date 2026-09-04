@@ -60,8 +60,9 @@ export const fetchQuiz = async (id) => {
 export const fetchSloka = async () => {
   try {
     const response = await axios.get(`${API_URL}/sloka-of-the-day/`);
-    return response;
+    return response.data; // ✅ Return response.data, not response
   } catch (error) {
+    console.error("Error fetching sloka:", error);
     throw error;
   }
 };
