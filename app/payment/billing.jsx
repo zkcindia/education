@@ -98,7 +98,7 @@ export default function BillingScreen() {
             style={styles.changePlanButton}
             onPress={() => router.push("/payment/billing-plan")}
           >
-            <Text style={styles.changePlanText}>Change Plan</Text>
+            <Text style={styles.changePlanText}>Make Payment</Text>
           </TouchableOpacity>
         </View>
 

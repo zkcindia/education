@@ -16,6 +16,7 @@ import {
   getLastQuizAttempt,
 } from '../../constants/api/apiScore';
 import { COLOR } from '../../constants/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // ⭐ ADD THIS IMPORT
 
 const QuizScreen = () => {
   const navigation = useNavigation();
@@ -39,12 +40,57 @@ const QuizScreen = () => {
   const [batchNumber, setBatchNumber] = useState(1);
   const [totalBatches, setTotalBatches] = useState(0);
 
+  // ⭐ MODIFIED: Check lock first then start
   useEffect(() => {
     if (id) {
-      checkAttemptAndStart();
+      checkLockAndStart();
     }
   }, [id]);
 
+  // ⭐ NEW FUNCTION: Check AsyncStorage lock first
+  const checkLockAndStart = async () => {
+    try {
+      setLoading(true);
+      
+      // 🔍 Check if there's a lock in storage
+      const lockData = await AsyncStorage.getItem(`quiz_lock_${id}`);
+      
+      if (lockData) {
+        const parsed = JSON.parse(lockData);
+        const unblockTime = new Date(parsed.unblockAt);
+        const now = new Date();
+        
+        // ⏳ If still locked
+        if (now < unblockTime) {
+          setLocked(true);
+          setLockInfo({
+            title: '⏳ Quiz Locked',
+            message: parsed.message || 'Please wait for cooldown period',
+            subjectName: '',
+            score: 0,
+            totalMarks: 20,
+            attemptNo: 3,
+            unblockAt: parsed.unblockAt,
+          });
+          setLoading(false);
+          return;
+        } else {
+          // ✅ Lock expired - remove from storage
+          await AsyncStorage.removeItem(`quiz_lock_${id}`);
+        }
+      }
+      
+      // 🟢 No lock found, proceed normally
+      await checkAttemptAndStart();
+      
+    } catch (error) {
+      console.log('Check lock error:', error);
+      // If error, try normal flow
+      await checkAttemptAndStart();
+    }
+  };
+
+  // ⭐ MODIFIED: Original checkAttemptAndStart with storage save
   const checkAttemptAndStart = async () => {
     try {
       setLoading(true);
@@ -93,16 +139,26 @@ const QuizScreen = () => {
         }
 
         if (last.passed === false && Number(last.attempt_no) >= 3) {
+          // ❌ Failed 3 attempts - Lock with 24 hours
           setLocked(true);
           setLockInfo({
             title: 'Attempts Finished 😔',
-            message:
-              'You have failed 3 attempts today. Please attempt again next day.',
+            message: 'You have failed 3 attempts. Please try again after 24 hours.',
             subjectName: last.subject_name,
             score: last.score,
             totalMarks: last.total_marks,
             attemptNo: last.attempt_no,
           });
+          
+          // ⭐ NEW: Save lock to AsyncStorage
+          const unblockTime = new Date();
+          unblockTime.setHours(unblockTime.getHours() + 24); // Add 24 hours
+          
+          await AsyncStorage.setItem(`quiz_lock_${id}`, JSON.stringify({
+            unblockAt: unblockTime.toISOString(),
+            message: 'You have failed 3 attempts. Please try again after 24 hours.',
+          }));
+          
           setLoading(false);
           return;
         }
@@ -215,6 +271,7 @@ const QuizScreen = () => {
     }
   };
 
+  // ⭐ MODIFIED: handleQuizComplete with API error handling and storage save
   const handleQuizComplete = async (finalScore) => {
     try {
       setIsSubmitting(true);
@@ -237,19 +294,41 @@ const QuizScreen = () => {
       });
     } catch (error) {
       const errorData = error.response?.data || {};
+      
+      console.log('Quiz submit error:', errorData);
 
-      setLocked(true);
-      setLockInfo({
-        title: 'Quiz Locked 🔒',
-        message:
-          errorData.message ||
-          errorData.detail ||
-          'You cannot start this quiz now. Please try again later.',
-        subjectName: '',
-        score: finalScore,
-        totalMarks: 20,
-        attemptNo: 3,
-      });
+      // ⭐ NEW: Check if this is a cooldown error from API
+      if (errorData.status === false && errorData.unblock_at) {
+        // 🔒 Set lock with API cooldown info
+        setLocked(true);
+        setLockInfo({
+          title: '⏳ Quiz Locked',
+          message: errorData.message || 'Try again after cooldown period',
+          subjectName: '',
+          score: finalScore,
+          totalMarks: 20,
+          attemptNo: 3,
+          unblockAt: errorData.unblock_at,
+        });
+        
+        // 💾 Save to AsyncStorage
+        await AsyncStorage.setItem(`quiz_lock_${id}`, JSON.stringify({
+          unblockAt: errorData.unblock_at,
+          message: errorData.message || 'Try again after cooldown period',
+        }));
+        
+      } else {
+        // 🟡 Other errors
+        setLocked(true);
+        setLockInfo({
+          title: 'Quiz Locked 🔒',
+          message: errorData.message || errorData.detail || 'You cannot start this quiz now. Please try again later.',
+          subjectName: '',
+          score: finalScore,
+          totalMarks: 20,
+          attemptNo: 3,
+        });
+      }
 
       setLoading(false);
     } finally {
@@ -305,7 +384,32 @@ const QuizScreen = () => {
     );
   }
 
+  // ⭐ MODIFIED: Lock screen with cooldown timer
   if (locked || !allQuestions.length) {
+    // ⏰ Calculate remaining time
+    let remainingTime = '';
+    let progressPercent = 0;
+    let isCooldown = false;
+    
+    if (lockInfo?.unblockAt) {
+      const unblockTime = new Date(lockInfo.unblockAt);
+      const now = new Date();
+      const diffMs = unblockTime - now;
+      
+      if (diffMs > 0) {
+        isCooldown = true;
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+        remainingTime = `${diffHrs}h ${diffMins}m ${diffSecs}s`;
+        
+        // Progress bar (assuming 24 hours total lock)
+        const totalLockTime = 24 * 60 * 60 * 1000;
+        const elapsed = totalLockTime - diffMs;
+        progressPercent = Math.min((elapsed / totalLockTime) * 100, 100);
+      }
+    }
+
     return (
       <View style={styles.lockContainer}>
         <View style={styles.lockCard}>
@@ -319,6 +423,19 @@ const QuizScreen = () => {
             {lockInfo?.message ||
               'You have failed 3 attempts today. Please attempt again next day.'}
           </Text>
+
+          {/* ⭐ NEW: Show cooldown timer if available */}
+          {isCooldown && (
+            <View style={styles.cooldownContainer}>
+              <Text style={styles.cooldownLabel}>⏳ Time Remaining</Text>
+              <Text style={styles.cooldownTime}>{remainingTime}</Text>
+              
+              {/* Progress bar */}
+              <View style={styles.cooldownProgressBar}>
+                <View style={[styles.cooldownProgressFill, { width: `${Math.min(progressPercent, 100)}%` }]} />
+              </View>
+            </View>
+          )}
 
           <View style={styles.lockInfoBox}>
             <Text style={styles.lockInfoText}>
@@ -675,6 +792,41 @@ const styles = StyleSheet.create({
     fontSize: 17,
     textAlign: 'center',
     fontFamily: 'roboto-bold',
+  },
+  // ⭐ NEW STYLES FOR COOLDOWN TIMER
+  cooldownContainer: {
+    width: '100%',
+    backgroundColor: '#f0f8ff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d0e8ff',
+  },
+  cooldownLabel: {
+    fontSize: 14,
+    fontFamily: 'roboto-medium',
+    color: '#666',
+    marginBottom: 4,
+  },
+  cooldownTime: {
+    fontSize: 28,
+    fontFamily: 'roboto-bold',
+    color: COLOR.background,
+    marginBottom: 8,
+  },
+  cooldownProgressBar: {
+    width: '100%',
+    height: 6,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  cooldownProgressFill: {
+    height: '100%',
+    backgroundColor: COLOR.background,
+    borderRadius: 3,
   },
 });
 

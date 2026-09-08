@@ -140,7 +140,8 @@ export default function BillingPlanScreen() {
         {/* ===== HEADER ===== */}
         <View style={styles.header}>
 
-          <Text style={styles.headerTitle}>Choose Your Plan</Text>
+          {/* <Text style={styles.headerTitle}>Choose Your Plan</Text> */}
+          <Text style={styles.headerTitle}>Make your payment</Text>
           <View style={{ width: 24 }} />
         </View>
 

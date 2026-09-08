@@ -85,6 +85,7 @@
 // }
 
 // app/_layout.jsx
+// app/_layout.jsx
 import { COLOR } from "@/constants/Colors";
 import { useFonts } from "expo-font";
 import { Stack, router, useSegments } from "expo-router";
@@ -100,77 +101,22 @@ import { useEffect, useState, useRef } from 'react';
 export default function RootLayout() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
-  const segments = useSegments();
-  const appState = useRef(AppState.currentState);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-
   const [fontsLoaded] = useFonts({
     'roboto': require('./../assets/fonts/Roboto-Regular.ttf'),
     'roboto-bold': require('./../assets/fonts/Roboto-Bold.ttf'),
     'roboto-medium': require('./../assets/fonts/Roboto-Medium.ttf'),
   });
 
-  // ✅ Initial load
+  // ✅ Simple approach - navigate after everything loads
   useEffect(() => {
     if (fontsLoaded) {
-      checkUserStatus();
+      // ✅ Wait for Stack to mount
+      const timer = setTimeout(() => {
+        checkUserStatus();
+      }, 1500);
+      return () => clearTimeout(timer);
     }
   }, [fontsLoaded]);
-
-  // ✅ App state change listener
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (
-        appState.current.match(/inactive|background/) && 
-        nextAppState === 'active' &&
-        !isRedirecting
-      ) {
-        console.log('📱 App came from background');
-        checkAndRedirectToWordOfDay();
-      }
-      appState.current = nextAppState;
-    });
-
-    return () => subscription.remove();
-  }, [isRedirecting]);
-
-  // ✅ Check if Word of Day already seen today
-  const checkAndRedirectToWordOfDay = async () => {
-    try {
-      if (isRedirecting) return;
-      setIsRedirecting(true);
-
-      const userData = await AsyncStorage.getItem('userData');
-      if (userData) {
-        const currentPath = segments.join('/');
-        const isOnWordOfDay = currentPath.includes('WordOfDay');
-        const isOnSpecialDay = currentPath.includes('SpecialDay');
-
-        // ✅ Check if already seen today
-        const today = new Date().toDateString();
-        const lastVisit = await AsyncStorage.getItem('lastWordOfDayVisit');
-        const alreadySeenToday = lastVisit === today;
-
-        console.log('📅 Today:', today);
-        console.log('📅 Last Visit:', lastVisit);
-        console.log('✅ Already seen today?', alreadySeenToday);
-
-        // ✅ Only redirect if NOT on WordOfDay AND NOT seen today
-        if (!isOnWordOfDay && !isOnSpecialDay && !alreadySeenToday) {
-          console.log('🔄 New day! Redirecting to Word of Day');
-          router.replace('/(drawer)/(studentIntro)/WordOfDay');
-        } else if (alreadySeenToday) {
-          console.log('✅ Already seen today, skipping redirect');
-        } else {
-          console.log('✅ Already on WordOfDay/SpecialDay');
-        }
-      }
-    } catch (error) {
-      console.log('Error:', error);
-    } finally {
-      setTimeout(() => setIsRedirecting(false), 1000);
-    }
-  };
 
   const checkUserStatus = async () => {
     try {
@@ -178,7 +124,6 @@ export default function RootLayout() {
       const userData = await AsyncStorage.getItem('userData');
 
       if (userData) {
-        // ✅ Check if already seen today
         const today = new Date().toDateString();
         const lastVisit = await AsyncStorage.getItem('lastWordOfDayVisit');
         const alreadySeenToday = lastVisit === today;
@@ -202,7 +147,8 @@ export default function RootLayout() {
     }
   };
 
-  if (loading || !fontsLoaded) {
+  // ✅ Show loading until fonts loaded
+  if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color={COLOR.background || "#003096"} />
@@ -210,6 +156,7 @@ export default function RootLayout() {
     );
   }
 
+  // ✅ Stack rendered - now navigate
   return (
     <Provider store={store}>
       <ToastProvider>
