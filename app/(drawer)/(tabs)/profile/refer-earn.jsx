@@ -12,7 +12,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
@@ -124,7 +124,7 @@ export default function ReferEarnScreen() {
         accountHolderName: accountHolderName.trim(),
       };
 
-      const response = await updateBankDetails(bankData);
+      await updateBankDetails(bankData);
 
       setSavedBankData(bankData);
       setBankAccount(bankData);
@@ -177,46 +177,45 @@ export default function ReferEarnScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* ===== SIMPLE HEADER ===== */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color="#fff" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBackBtn}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Refer & Earn</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Wallet Card */}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* ===== WALLET CARD ===== */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons
-              name="wallet-outline"
-              size={24}
-              color="#EA580C"
-            />
+            <View style={styles.cardIcon}>
+              <Ionicons name="wallet-outline" size={20} color="#4F46E5" />
+            </View>
             <Text style={styles.cardTitle}>My Wallet</Text>
           </View>
           <Text style={styles.balance}>₹{walletBalance}</Text>
           <Text style={styles.balanceLabel}>Available Balance</Text>
 
           {fetchingBank ? (
-            <ActivityIndicator color="#EA580C" style={{ marginVertical: 20 }} />
+            <ActivityIndicator color="#4F46E5" style={{ marginVertical: 20 }} />
           ) : hasBankDetails ? (
             <View style={styles.bankBox}>
               <View style={styles.bankRow}>
-                <MaterialCommunityIcons name="bank" size={20} color="#10B981" />
-                <View style={{ flex: 1 }}>
+                <View style={styles.bankIcon}>
+                  <Ionicons name="business-outline" size={16} color="#10B981" />
+                </View>
+                <View style={styles.bankInfo}>
                   <Text style={styles.bankName}>
                     {bankAccount.accountHolderName}
                   </Text>
                   <Text style={styles.bankDetails}>
-                    {bankAccount.bankName} •{" "}
-                    {maskAccount(bankAccount.accountNumber)}
+                    {bankAccount.bankName} • {maskAccount(bankAccount.accountNumber)}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => setShowBankModal(true)}>
-                  <Feather name="edit-2" size={18} color="#EA580C" />
+                <TouchableOpacity onPress={() => setShowBankModal(true)} style={styles.bankEditBtn}>
+                  <Feather name="edit-2" size={16} color="#4F46E5" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -225,35 +224,28 @@ export default function ReferEarnScreen() {
               style={styles.addBankBtn}
               onPress={() => setShowBankModal(true)}
             >
-              <MaterialCommunityIcons
-                name="bank-plus"
-                size={20}
-                color="#EA580C"
-              />
+              <Ionicons name="add-circle-outline" size={20} color="#4F46E5" />
               <Text style={styles.addBankText}>Add Bank Details</Text>
             </TouchableOpacity>
           )}
 
-<TouchableOpacity
-  style={[styles.withdrawBtn, (!hasBankDetails || walletBalance < 100) && styles.disabledBtn]}
-  onPress={() => setShowWithdrawModal(true)}
-  disabled={!hasBankDetails || walletBalance < 100}
->
-  <Text style={styles.withdrawText}>Withdraw</Text>
-</TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.withdrawBtn, (!hasBankDetails || walletBalance < 100) && styles.disabledBtn]}
+            onPress={() => setShowWithdrawModal(true)}
+            disabled={!hasBankDetails || walletBalance < 100}
+          >
+            <Text style={styles.withdrawText}>Withdraw</Text>
+          </TouchableOpacity>
 
-  {/* 👇 UPDATE THIS LINE - Add the hint text here */}
-  {!hasBankDetails && !fetchingBank && <Text style={styles.hint}>Add bank details to withdraw</Text>}
-  {hasBankDetails && walletBalance < 100 && <Text style={styles.hint}>Minimum withdrawal: ₹100</Text>}
+          {!hasBankDetails && !fetchingBank && <Text style={styles.hint}>Add bank details to withdraw</Text>}
+          {hasBankDetails && walletBalance < 100 && <Text style={styles.hint}>Minimum withdrawal: ₹100</Text>}
         </View>
 
-        {/* Referral Card */}
-        <View style={styles.card}>
-          <MaterialCommunityIcons
-            name="gift-outline"
-            size={50}
-            color="#EA580C"
-          />
+        {/* ===== REFERRAL CARD ===== */}
+        <View style={[styles.card, styles.referralCard]}>
+          <View style={styles.referralIconBg}>
+            <Ionicons name="gift-outline" size={28} color="#4F46E5" />
+          </View>
           <Text style={styles.referTitle}>Earn ₹50 per Referral</Text>
 
           <View style={styles.codeBox}>
@@ -271,12 +263,13 @@ export default function ReferEarnScreen() {
           </View>
         </View>
 
-        {/* Stats */}
+        {/* ===== STATS ===== */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>₹{walletBalance}</Text>
             <Text style={styles.statLabel}>Earned</Text>
           </View>
+          <View style={styles.statDivider} />
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{totalReferrals}</Text>
             <Text style={styles.statLabel}>Referrals</Text>
@@ -284,7 +277,7 @@ export default function ReferEarnScreen() {
         </View>
       </ScrollView>
 
-      {/* Bank Details Modal */}
+      {/* ===== BANK DETAILS MODAL ===== */}
       <Modal visible={showBankModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -298,6 +291,7 @@ export default function ReferEarnScreen() {
             <TextInput
               style={styles.input}
               placeholder="Bank Name"
+              placeholderTextColor="#9CA3AF"
               value={bankForm.bankName}
               onChangeText={(text) =>
                 setBankForm({ ...bankForm, bankName: text })
@@ -306,6 +300,7 @@ export default function ReferEarnScreen() {
             <TextInput
               style={styles.input}
               placeholder="Account Holder Name"
+              placeholderTextColor="#9CA3AF"
               value={bankForm.accountHolderName}
               onChangeText={(text) =>
                 setBankForm({ ...bankForm, accountHolderName: text })
@@ -314,6 +309,7 @@ export default function ReferEarnScreen() {
             <TextInput
               style={styles.input}
               placeholder="Account Number"
+              placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
               value={bankForm.accountNumber}
               onChangeText={(text) =>
@@ -323,6 +319,7 @@ export default function ReferEarnScreen() {
             <TextInput
               style={styles.input}
               placeholder="IFSC Code"
+              placeholderTextColor="#9CA3AF"
               autoCapitalize="characters"
               value={bankForm.ifscCode}
               onChangeText={(text) =>
@@ -345,16 +342,12 @@ export default function ReferEarnScreen() {
         </View>
       </Modal>
 
-      {/* Bank Success Modal - Shows saved bank details */}
+      {/* ===== BANK SUCCESS MODAL ===== */}
       <Modal visible={showBankSuccessModal} animationType="fade" transparent>
         <View style={styles.successOverlay}>
           <View style={styles.successModal}>
             <View style={styles.successIconContainer}>
-              <MaterialCommunityIcons
-                name="check-circle"
-                size={60}
-                color="#10B981"
-              />
+              <Ionicons name="checkmark-circle" size={60} color="#10B981" />
             </View>
 
             <Text style={styles.successTitle}>Bank Details Saved!</Text>
@@ -364,25 +357,25 @@ export default function ReferEarnScreen() {
 
             <View style={styles.successDetails}>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Account Holder:</Text>
+                <Text style={styles.successDetailLabel}>Account Holder</Text>
                 <Text style={styles.successDetailValue}>
                   {savedBankData?.accountHolderName}
                 </Text>
               </View>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Bank Name:</Text>
+                <Text style={styles.successDetailLabel}>Bank Name</Text>
                 <Text style={styles.successDetailValue}>
                   {savedBankData?.bankName}
                 </Text>
               </View>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Account Number:</Text>
+                <Text style={styles.successDetailLabel}>Account Number</Text>
                 <Text style={styles.successDetailValue}>
                   {maskAccount(savedBankData?.accountNumber)}
                 </Text>
               </View>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>IFSC Code:</Text>
+                <Text style={styles.successDetailLabel}>IFSC Code</Text>
                 <Text style={styles.successDetailValue}>
                   {savedBankData?.ifscCode}
                 </Text>
@@ -406,7 +399,7 @@ export default function ReferEarnScreen() {
         </View>
       </Modal>
 
-      {/* Withdraw Modal */}
+      {/* ===== WITHDRAW MODAL ===== */}
       <Modal visible={showWithdrawModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -419,41 +412,47 @@ export default function ReferEarnScreen() {
 
             {bankAccount && (
               <View style={styles.bankPreview}>
-                <MaterialCommunityIcons name="bank" size={20} color="#EA580C" />
-                <View>
+                <Ionicons name="business-outline" size={20} color="#4F46E5" />
+                <View style={styles.bankPreviewInfo}>
                   <Text style={styles.bankPreviewName}>
                     {bankAccount.accountHolderName}
                   </Text>
                   <Text style={styles.bankPreviewDetail}>
-                    {bankAccount.bankName} •{" "}
-                    {maskAccount(bankAccount.accountNumber)}
+                    {bankAccount.bankName} • {maskAccount(bankAccount.accountNumber)}
                   </Text>
                 </View>
               </View>
             )}
 
-<TextInput
-  style={[styles.input, styles.amountInput]}
-  placeholder="Enter amount (Minimum ₹100)"
-  keyboardType="numeric"
-  value={withdrawAmount}
-  onChangeText={setWithdrawAmount}
-/>
+            <TextInput
+              style={[styles.input, styles.amountInput]}
+              placeholder="Enter amount (Minimum ₹100)"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="numeric"
+              value={withdrawAmount}
+              onChangeText={setWithdrawAmount}
+            />
 
-<View style={styles.quickAmounts}>
-  {[100, 200, 500].map((amt) => (
-    <TouchableOpacity key={amt} style={styles.quickAmount} onPress={() => setWithdrawAmount(amt.toString())}>
-      <Text style={styles.quickAmountText}>₹{amt}</Text>
-    </TouchableOpacity>
-  ))}
-</View>
+            <View style={styles.quickAmounts}>
+              {[100, 200, 500].map((amt) => (
+                <TouchableOpacity 
+                  key={amt} 
+                  style={[styles.quickAmount, withdrawAmount === amt.toString() && styles.quickAmountActive]} 
+                  onPress={() => setWithdrawAmount(amt.toString())}
+                >
+                  <Text style={[styles.quickAmountText, withdrawAmount === amt.toString() && styles.quickAmountTextActive]}>
+                    ₹{amt}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <Text style={styles.balanceInfo}>Available: ₹{walletBalance}</Text>
 
             <TouchableOpacity
-              style={styles.withdrawBtn}
+              style={[styles.withdrawBtn, (!withdrawAmount || Number(withdrawAmount) < 100) && styles.disabledBtn]}
               onPress={handleWithdraw}
-              disabled={withdrawing}
+              disabled={withdrawing || !withdrawAmount || Number(withdrawAmount) < 100}
             >
               <Text style={styles.withdrawText}>
                 {withdrawing ? "Processing..." : "Withdraw"}
@@ -463,16 +462,12 @@ export default function ReferEarnScreen() {
         </View>
       </Modal>
 
-      {/* Withdrawal Success Modal */}
+      {/* ===== WITHDRAWAL SUCCESS MODAL ===== */}
       <Modal visible={showSuccessModal} animationType="fade" transparent>
         <View style={styles.successOverlay}>
           <View style={styles.successModal}>
             <View style={styles.successIconContainer}>
-              <MaterialCommunityIcons
-                name="check-circle"
-                size={60}
-                color="#10B981"
-              />
+              <Ionicons name="checkmark-circle" size={60} color="#10B981" />
             </View>
 
             <Text style={styles.successTitle}>Withdrawal Requested!</Text>
@@ -482,17 +477,17 @@ export default function ReferEarnScreen() {
 
             <View style={styles.successDetails}>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Amount:</Text>
+                <Text style={styles.successDetailLabel}>Amount</Text>
                 <Text style={styles.successDetailValue}>₹{withdrawAmount}</Text>
               </View>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Bank:</Text>
+                <Text style={styles.successDetailLabel}>Bank</Text>
                 <Text style={styles.successDetailValue}>
                   {bankAccount?.bankName}
                 </Text>
               </View>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Account:</Text>
+                <Text style={styles.successDetailLabel}>Account</Text>
                 <Text style={styles.successDetailValue}>
                   {maskAccount(bankAccount?.accountNumber)}
                 </Text>
@@ -520,236 +515,495 @@ export default function ReferEarnScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F3FF",
+  },
+
+  // ===== HEADER =====
   header: {
-    backgroundColor: "#EA580C",
-    padding: 20,
+  backgroundColor: "rgba(0, 48, 150, 1.00)", 
+    paddingHorizontal: 20,
     paddingTop: 50,
+    paddingBottom: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
-  headerTitle: { color: "#fff", fontSize: 20, fontWeight: "bold" },
-  content: { padding: 20 },
+
+  headerBackBtn: {
+    padding: 4,
+  },
+
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 0.5,
+  },
+
+  // ===== CONTENT =====
+  content: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+
+  // ===== CARD =====
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
   },
+
+  referralCard: {
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+  },
+
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 10,
     alignSelf: "flex-start",
   },
-  cardTitle: { fontSize: 18, fontWeight: "600", color: "#374151" },
-  balance: { fontSize: 40, fontWeight: "bold", color: "#EA580C", marginTop: 8 },
-  balanceLabel: { color: "#6B7280", fontSize: 14, marginBottom: 20 },
+
+  cardIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+
+  balance: {
+    fontSize: 38,
+    fontWeight: "800",
+    color: "#1E293B",
+    marginTop: 2,
+  },
+
+  balanceLabel: {
+    color: "#94A3B8",
+    fontSize: 12,
+    marginBottom: 14,
+  },
+
+  // ===== BANK =====
   bankBox: {
     backgroundColor: "#F0FDF4",
     padding: 12,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 14,
     width: "100%",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
   },
-  bankRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  bankName: { fontSize: 14, fontWeight: "500", color: "#065F46" },
-  bankDetails: { fontSize: 12, color: "#047857", marginTop: 2 },
+
+  bankRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  bankIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: "#DCFCE7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  bankInfo: {
+    flex: 1,
+  },
+
+  bankName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#065F46",
+  },
+
+  bankDetails: {
+    fontSize: 11,
+    color: "#047857",
+    marginTop: 1,
+  },
+
+  bankEditBtn: {
+    padding: 6,
+  },
+
   addBankBtn: {
-    backgroundColor: "#FFF7ED",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#EEF2FF",
     paddingVertical: 12,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 14,
     width: "100%",
-    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#FED7AA",
+    borderColor: "#C7D2FE",
     borderStyle: "dashed",
   },
-  addBankText: { color: "#EA580C", fontWeight: "500" },
+
+  addBankText: {
+    color: "#4F46E5",
+    fontWeight: "500",
+    fontSize: 14,
+  },
+
   withdrawBtn: {
-    backgroundColor: "#EA580C",
+ backgroundColor: "rgba(0, 48, 150, 1.00)",
     paddingVertical: 14,
     borderRadius: 12,
     width: "100%",
     alignItems: "center",
   },
-  disabledBtn: { backgroundColor: "#D1D5DB" },
-  withdrawText: { color: "#fff", fontWeight: "600" },
-  referTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#EA580C",
-    marginTop: 12,
+
+  disabledBtn: {
+    backgroundColor: "#D1D5DB",
+  },
+
+  withdrawText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+
+  hint: {
+    color: "#94A3B8",
+    fontSize: 11,
+    marginTop: 8,
     textAlign: "center",
   },
-  codeBox: {
-    backgroundColor: "#fff",
-    width: "100%",
-    paddingVertical: 18,
-    borderRadius: 16,
+
+  // ===== REFERRAL =====
+  referralIconBg: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#EEF2FF",
     alignItems: "center",
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#FB923C",
-    marginVertical: 20,
+    justifyContent: "center",
+    marginBottom: 6,
   },
-  codeLabel: { color: "#78716C", fontSize: 13 },
+
+  referTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+
+  codeBox: {
+    backgroundColor: "#EEF2FF",
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+    marginVertical: 14,
+  },
+
+  codeLabel: {
+    color: "#94A3B8",
+    fontSize: 11,
+  },
+
   codeText: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#EA580C",
-    letterSpacing: 2,
-    marginTop: 6,
+    fontWeight: "800",
+    color: "#4F46E5",
+    letterSpacing: 3,
+    marginTop: 3,
   },
-  buttonRow: { flexDirection: "row", gap: 12, width: "100%" },
+
+  buttonRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+
   copyBtn: {
     flex: 1,
-    backgroundColor: "#EA580C",
-    paddingVertical: 14,
+    backgroundColor: "#4F46E5",
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
   },
+
   shareBtn: {
     flex: 1,
-    backgroundColor: "#F59E0B",
-    paddingVertical: 14,
+    backgroundColor: "#7C3AED",
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
   },
-  btnText: { color: "#fff", fontWeight: "bold" },
-  statsRow: { flexDirection: "row", gap: 12, marginTop: 18 },
+
+  btnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+
+  // ===== STATS =====
+  statsRow: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
   statCard: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
     alignItems: "center",
+    paddingVertical: 4,
   },
-  statValue: { fontSize: 22, fontWeight: "bold", color: "#EA580C" },
-  statLabel: { color: "#78716C", marginTop: 4 },
+
+  statValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#4F46E5",
+  },
+
+  statLabel: {
+    fontSize: 12,
+    color: "#94A3B8",
+    marginTop: 2,
+  },
+
+  statDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: "#E2E8F0",
+  },
+
+  // ===== MODALS =====
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
+
   modalContent: {
     backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
+    paddingBottom: 30,
   },
+
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 18,
   },
-  modalTitle: { fontSize: 20, fontWeight: "bold", color: "#111827" },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
     borderRadius: 12,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#F9FAFB",
-    marginBottom: 16,
+    padding: 14,
+    fontSize: 14,
+    backgroundColor: "#F8FAFC",
+    marginBottom: 14,
+    color: "#1E293B",
   },
+
   saveBtn: {
-    backgroundColor: "#EA580C",
+    backgroundColor: "#4F46E5",
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 6,
   },
-  saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+
+  saveBtnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
   bankPreview: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F8FAFC",
     padding: 12,
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
-  bankPreviewName: { fontSize: 14, fontWeight: "500", color: "#374151" },
-  bankPreviewDetail: { fontSize: 12, color: "#6B7280" },
-  amountInput: { fontSize: 24, fontWeight: "bold", textAlign: "center" },
-  quickAmounts: { flexDirection: "row", gap: 12, marginTop: 16 },
+
+  bankPreviewInfo: {
+    flex: 1,
+  },
+
+  bankPreviewName: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#1E293B",
+  },
+
+  bankPreviewDetail: {
+    fontSize: 11,
+    color: "#94A3B8",
+  },
+
+  amountInput: {
+    fontSize: 24,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  quickAmounts: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 6,
+  },
+
   quickAmount: {
     flex: 1,
     paddingVertical: 10,
-    backgroundColor: "#FFF7ED",
+    backgroundColor: "#F8FAFC",
     borderRadius: 10,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
-  quickAmountText: { color: "#EA580C", fontWeight: "600" },
-  balanceInfo: { textAlign: "center", marginTop: 16, color: "#6B7280" },
+
+  quickAmountActive: {
+    backgroundColor: "#EEF2FF",
+    borderColor: "#4F46E5",
+  },
+
+  quickAmountText: {
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  quickAmountTextActive: {
+    color: "#4F46E5",
+  },
+
+  balanceInfo: {
+    textAlign: "center",
+    marginTop: 12,
+    color: "#94A3B8",
+    fontSize: 13,
+  },
+
+  // ===== SUCCESS MODALS =====
   successOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
   },
+
   successModal: {
     backgroundColor: "#fff",
     borderRadius: 24,
     padding: 24,
-    width: "85%",
+    width: "88%",
     alignItems: "center",
   },
-  successIconContainer: { marginBottom: 16 },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-    textAlign: "center",
-    marginBottom: 8,
+
+  successIconContainer: {
+    marginBottom: 10,
   },
+
+  successTitle: {
+    fontSize: 19,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 6,
+  },
+
   successMessage: {
     fontSize: 14,
     color: "#6B7280",
     textAlign: "center",
-    marginBottom: 20,
-  },
-  successDetails: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 16,
-    width: "100%",
     marginBottom: 16,
   },
+
+  successDetails: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 14,
+    width: "100%",
+    marginBottom: 14,
+  },
+
   successDetailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    paddingVertical: 3,
   },
-  successDetailLabel: { fontSize: 13, color: "#6B7280" },
-  successDetailValue: { fontSize: 13, fontWeight: "600", color: "#111827" },
+
+  successDetailLabel: {
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+
+  successDetailValue: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+
   successNote: {
     fontSize: 12,
-    color: "#EA580C",
+    color: "#4F46E5",
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
+
   successButton: {
-    backgroundColor: "#EA580C",
+    backgroundColor: "#4F46E5",
     paddingVertical: 12,
-    paddingHorizontal: 32,
     borderRadius: 12,
     width: "100%",
   },
+
   successButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
   },

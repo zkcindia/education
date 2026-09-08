@@ -8,6 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Animatable from "react-native-animatable";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -162,9 +163,19 @@ export default function WordOfDay() {
     }
   };
 
-  const handleContinue = () => {
-    router.push("/(drawer)/(studentIntro)/SpecialDay");
-  };
+  // const handleContinue = () => {
+  //   router.push("/(drawer)/(studentIntro)/SpecialDay");
+  // };
+
+  // ✅ NEW (ab yeh karna hai)
+const handleContinue = async () => {
+  // ✅ Date store karein - taaki aaj dobara na dikhe
+  const today = new Date().toDateString();
+  await AsyncStorage.setItem('lastWordOfDayVisit', today);
+  
+  // ✅ SpecialDay par jaye (same as before)
+  router.push("/(drawer)/(studentIntro)/SpecialDay");
+};
 
   const handleRetry = () => {
     loadSlokaData();

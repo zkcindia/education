@@ -12,7 +12,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
@@ -50,7 +50,6 @@ export default function TeacherReferEarnScreen() {
     accountHolderName: "",
   });
 
-  // Teacher earns ₹500 per referral
   const REFERRAL_AMOUNT = 50;
 
   useEffect(() => {
@@ -201,30 +200,36 @@ export default function TeacherReferEarnScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* ===== HEADER ===== */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Student Refer & Earn</Text>
-        <TouchableOpacity onPress={() => loadWallet()}>
-          <Feather name="refresh-cw" size={20} color="#fff" />
-        </TouchableOpacity>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackBtn}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Refer & Earn</Text>
+          <TouchableOpacity onPress={() => loadWallet()} style={styles.headerRefreshBtn}>
+            <Ionicons name="refresh-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.headerSubtitle}>Invite students and earn rewards</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Teacher Badge */}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* ===== TEACHER BADGE ===== */}
         <View style={styles.teacherBadge}>
-          <MaterialCommunityIcons name="school" size={20} color="#fff" />
+          <Ionicons name="school-outline" size={18} color="rgba(0, 48, 150, 1.00)" />
           <Text style={styles.teacherBadgeText}>Teacher Account</Text>
         </View>
 
-        {/* Wallet Card */}
+        {/* ===== WALLET CARD ===== */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name="wallet-outline" size={24} color="#EA580C" />
+            <View style={styles.cardIcon}>
+              <Ionicons name="wallet-outline" size={22} color="rgba(0, 48, 150, 1.00)" />
+            </View>
             <Text style={styles.cardTitle}>My Wallet</Text>
           </View>
+
           <Text style={styles.balance}>₹{walletBalance}</Text>
           <Text style={styles.balanceLabel}>Available Balance</Text>
 
@@ -233,32 +238,35 @@ export default function TeacherReferEarnScreen() {
               <Text style={styles.statValue}>₹{totalEarned}</Text>
               <Text style={styles.statLabel}>Total Earned</Text>
             </View>
+            <View style={styles.statDividerSmall} />
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{totalReferrals}</Text>
-              <Text style={styles.statLabel}>Teachers Referred</Text>
+              <Text style={styles.statLabel}>Referred</Text>
             </View>
           </View>
 
           {fetchingBank ? (
-            <ActivityIndicator color="#EA580C" style={{ marginVertical: 20 }} />
+            <ActivityIndicator color="rgba(0, 48, 150, 1.00)" style={{ marginVertical: 16 }} />
           ) : hasBankDetails ? (
             <View style={styles.bankBox}>
               <View style={styles.bankRow}>
-                <MaterialCommunityIcons name="bank" size={20} color="#10B981" />
-                <View style={{ flex: 1 }}>
+                <View style={styles.bankIcon}>
+                  <Ionicons name="business-outline" size={18} color="#10B981" />
+                </View>
+                <View style={styles.bankInfo}>
                   <Text style={styles.bankName}>{bankAccount.accountHolderName}</Text>
                   <Text style={styles.bankDetails}>
                     {bankAccount.bankName} • {maskAccount(bankAccount.accountNumber)}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => setShowBankModal(true)}>
-                  <Feather name="edit-2" size={18} color="#EA580C" />
+                <TouchableOpacity onPress={() => setShowBankModal(true)} style={styles.bankEditBtn}>
+                  <Feather name="edit-2" size={16} color="rgba(0, 48, 150, 1.00)" />
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
             <TouchableOpacity style={styles.addBankBtn} onPress={() => setShowBankModal(true)}>
-              <MaterialCommunityIcons name="bank-plus" size={20} color="#EA580C" />
+              <Ionicons name="add-circle-outline" size={22} color="rgba(0, 48, 150, 1.00)" />
               <Text style={styles.addBankText}>Add Bank Details</Text>
             </TouchableOpacity>
           )}
@@ -268,44 +276,56 @@ export default function TeacherReferEarnScreen() {
             onPress={() => setShowWithdrawModal(true)}
             disabled={!hasBankDetails || walletBalance < 100}
           >
-            <MaterialCommunityIcons name="bank-transfer" size={20} color="#fff" />
             <Text style={styles.withdrawText}>Withdraw</Text>
           </TouchableOpacity>
           
-          {!hasBankDetails && !fetchingBank && <Text style={styles.hint}>Add bank details to withdraw</Text>}
-          {hasBankDetails && walletBalance < 100 && <Text style={styles.hint}>Minimum withdrawal: ₹100</Text>}
+          {!hasBankDetails && !fetchingBank && (
+            <Text style={styles.hint}>Add bank details to withdraw earnings</Text>
+          )}
+          {hasBankDetails && walletBalance < 100 && (
+            <Text style={styles.hint}>Minimum withdrawal: ₹100</Text>
+          )}
         </View>
 
-        {/* Referral Card */}
-        <View style={styles.card}>
-          <MaterialCommunityIcons name="gift-outline" size={50} color="#EA580C" />
+        {/* ===== REFERRAL CARD ===== */}
+        <View style={[styles.card, styles.referralCard]}>
+          <View style={styles.referralIconBg}>
+            <Ionicons name="gift-outline" size={32} color="rgba(0, 48, 150, 1.00)" />
+          </View>
           <Text style={styles.referTitle}>Refer a Student</Text>
           <Text style={styles.referSubtitle}>Earn ₹{REFERRAL_AMOUNT} per referral</Text>
           
           <View style={styles.codeBox}>
             <Text style={styles.codeLabel}>Your Referral Code</Text>
             <Text style={styles.codeText}>{referralCode}</Text>
+            <View style={styles.codeDivider} />
+            <Text style={styles.codeHint}>Share this code with students</Text>
           </View>
           
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.copyBtn} onPress={handleCopy}>
-              <Text style={styles.btnText}>Copy Code</Text>
+              <Ionicons name="copy-outline" size={18} color="#fff" />
+              <Text style={styles.btnText}>Copy</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
+              <Ionicons name="share-social-outline" size={18} color="#fff" />
               <Text style={styles.btnText}>Share</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Referral Stats Card */}
+        {/* ===== REFERRAL STATS ===== */}
         <View style={styles.statsCardLarge}>
-          <Text style={styles.statsTitle}>Referral Earnings</Text>
+          <View style={styles.statsHeader}>
+            <Ionicons name="trending-up-outline" size={20} color="rgba(0, 48, 150, 1.00)" />
+            <Text style={styles.statsTitle}>Referral Earnings</Text>
+          </View>
           <View style={styles.statsRowLarge}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{totalReferrals}</Text>
-              <Text style={styles.statSmallLabel}>Teachers Referred</Text>
+              <Text style={styles.statSmallLabel}>Students Referred</Text>
             </View>
-            <View style={styles.statDivider} />
+            <View style={styles.statDividerLarge} />
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>₹{totalReferrals * REFERRAL_AMOUNT}</Text>
               <Text style={styles.statSmallLabel}>Total Earned</Text>
@@ -313,17 +333,40 @@ export default function TeacherReferEarnScreen() {
           </View>
         </View>
 
-        {/* Info Card */}
+        {/* ===== HOW IT WORKS ===== */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>How Student Referral Works</Text>
-          <Text style={styles.infoText}>1️⃣ Share your referral code with Students</Text>
-          <Text style={styles.infoText}>2️⃣ Student signs up using your code</Text>
-          <Text style={styles.infoText}>3️⃣ You earn ₹{REFERRAL_AMOUNT} after verification</Text>
-          <Text style={styles.infoText}>4️⃣ Withdraw earnings to your bank account</Text>
+          <View style={styles.infoHeader}>
+            <Ionicons name="bulb-outline" size={22} color="rgba(0, 48, 150, 1.00)" />
+            <Text style={styles.infoTitle}>How Student Referral Works</Text>
+          </View>
+          <View style={styles.stepItem}>
+            <View style={[styles.stepNumber, { backgroundColor: "rgba(0, 48, 150, 1.00)" }]}>
+              <Text style={styles.stepNumberText}>1</Text>
+            </View>
+            <Text style={styles.infoText}>Share your referral code with students</Text>
+          </View>
+          <View style={styles.stepItem}>
+            <View style={[styles.stepNumber, { backgroundColor: "rgba(0, 48, 150, 1.00)" }]}>
+              <Text style={styles.stepNumberText}>2</Text>
+            </View>
+            <Text style={styles.infoText}>Student signs up using your code</Text>
+          </View>
+          <View style={styles.stepItem}>
+            <View style={[styles.stepNumber, { backgroundColor: "rgba(0, 48, 150, 1.00)" }]}>
+              <Text style={styles.stepNumberText}>3</Text>
+            </View>
+            <Text style={styles.infoText}>You earn ₹{REFERRAL_AMOUNT} after verification</Text>
+          </View>
+          <View style={styles.stepItem}>
+            <View style={[styles.stepNumber, { backgroundColor: "rgba(0, 48, 150, 1.00)" }]}>
+              <Text style={styles.stepNumberText}>4</Text>
+            </View>
+            <Text style={styles.infoText}>Withdraw earnings to your bank account</Text>
+          </View>
         </View>
       </ScrollView>
 
-      {/* Bank Details Modal */}
+      {/* ===== BANK DETAILS MODAL ===== */}
       <Modal visible={showBankModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -337,18 +380,21 @@ export default function TeacherReferEarnScreen() {
             <TextInput
               style={styles.input}
               placeholder="Bank Name"
+              placeholderTextColor="#9CA3AF"
               value={bankForm.bankName}
               onChangeText={(text) => setBankForm({ ...bankForm, bankName: text })}
             />
             <TextInput
               style={styles.input}
               placeholder="Account Holder Name"
+              placeholderTextColor="#9CA3AF"
               value={bankForm.accountHolderName}
               onChangeText={(text) => setBankForm({ ...bankForm, accountHolderName: text })}
             />
             <TextInput
               style={styles.input}
               placeholder="Account Number"
+              placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
               value={bankForm.accountNumber}
               onChangeText={(text) => setBankForm({ ...bankForm, accountNumber: text })}
@@ -356,40 +402,47 @@ export default function TeacherReferEarnScreen() {
             <TextInput
               style={styles.input}
               placeholder="IFSC Code"
+              placeholderTextColor="#9CA3AF"
               autoCapitalize="characters"
               value={bankForm.ifscCode}
               onChangeText={(text) => setBankForm({ ...bankForm, ifscCode: text.toUpperCase() })}
             />
 
             <TouchableOpacity style={styles.saveBtn} onPress={saveBankAccount} disabled={loading}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveBtnText}>Save Bank Details</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Bank Success Modal */}
+      {/* ===== BANK SUCCESS MODAL ===== */}
       <Modal visible={showBankSuccessModal} animationType="fade" transparent>
         <View style={styles.successOverlay}>
           <View style={styles.successModal}>
-            <MaterialCommunityIcons name="check-circle" size={60} color="#10B981" />
+            <View style={[styles.successIconCircle, { backgroundColor: "#10B981" }]}>
+              <Ionicons name="checkmark" size={40} color="#fff" />
+            </View>
             <Text style={styles.successTitle}>Bank Details Saved!</Text>
             
             <View style={styles.successDetails}>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Account Holder:</Text>
+                <Text style={styles.successDetailLabel}>Account Holder</Text>
                 <Text style={styles.successDetailValue}>{savedBankData?.accountHolderName}</Text>
               </View>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Bank Name:</Text>
+                <Text style={styles.successDetailLabel}>Bank Name</Text>
                 <Text style={styles.successDetailValue}>{savedBankData?.bankName}</Text>
               </View>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>Account Number:</Text>
+                <Text style={styles.successDetailLabel}>Account Number</Text>
                 <Text style={styles.successDetailValue}>{maskAccount(savedBankData?.accountNumber)}</Text>
               </View>
               <View style={styles.successDetailRow}>
-                <Text style={styles.successDetailLabel}>IFSC Code:</Text>
+                <Text style={styles.successDetailLabel}>IFSC Code</Text>
                 <Text style={styles.successDetailValue}>{savedBankData?.ifscCode}</Text>
               </View>
             </View>
@@ -401,7 +454,7 @@ export default function TeacherReferEarnScreen() {
         </View>
       </Modal>
 
-      {/* Withdraw Modal */}
+      {/* ===== WITHDRAW MODAL ===== */}
       <Modal visible={showWithdrawModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -414,8 +467,8 @@ export default function TeacherReferEarnScreen() {
 
             {bankAccount && (
               <View style={styles.bankPreview}>
-                <MaterialCommunityIcons name="bank" size={20} color="#EA580C" />
-                <View>
+                <Ionicons name="business-outline" size={20} color="rgba(0, 48, 150, 1.00)" />
+                <View style={styles.bankPreviewInfo}>
                   <Text style={styles.bankPreviewName}>{bankAccount.accountHolderName}</Text>
                   <Text style={styles.bankPreviewDetail}>
                     {bankAccount.bankName} • {maskAccount(bankAccount.accountNumber)}
@@ -427,6 +480,7 @@ export default function TeacherReferEarnScreen() {
             <TextInput
               style={[styles.input, styles.amountInput]}
               placeholder="Enter amount (Min ₹100)"
+              placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
               value={withdrawAmount}
               onChangeText={setWithdrawAmount}
@@ -434,29 +488,46 @@ export default function TeacherReferEarnScreen() {
 
             <View style={styles.quickAmounts}>
               {[100, 500, 1000, 5000].map((amt) => (
-                <TouchableOpacity key={amt} style={styles.quickAmount} onPress={() => setWithdrawAmount(amt.toString())}>
-                  <Text style={styles.quickAmountText}>₹{amt}</Text>
+                <TouchableOpacity 
+                  key={amt} 
+                  style={[styles.quickAmount, withdrawAmount === amt.toString() && styles.quickAmountActive]} 
+                  onPress={() => setWithdrawAmount(amt.toString())}
+                >
+                  <Text style={[styles.quickAmountText, withdrawAmount === amt.toString() && styles.quickAmountTextActive]}>
+                    ₹{amt}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.balanceInfo}>Available: ₹{walletBalance}</Text>
+            <Text style={styles.balanceInfo}>Available Balance: ₹{walletBalance}</Text>
 
-            <TouchableOpacity style={styles.withdrawBtn} onPress={handleWithdraw} disabled={withdrawing}>
-              <Text style={styles.withdrawText}>{withdrawing ? "Processing..." : "Request Withdrawal"}</Text>
+            <TouchableOpacity 
+              style={[styles.withdrawBtnModal, (!withdrawAmount || Number(withdrawAmount) < 100) && styles.disabledBtn]} 
+              onPress={handleWithdraw} 
+              disabled={withdrawing || !withdrawAmount || Number(withdrawAmount) < 100}
+            >
+              <Text style={styles.withdrawText}>
+                {withdrawing ? "Processing..." : "Request Withdrawal"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Withdrawal Success Modal */}
+      {/* ===== WITHDRAWAL SUCCESS MODAL ===== */}
       <Modal visible={showSuccessModal} animationType="fade" transparent>
         <View style={styles.successOverlay}>
           <View style={styles.successModal}>
-            <MaterialCommunityIcons name="check-circle" size={60} color="#10B981" />
+            <View style={[styles.successIconCircle, { backgroundColor: "#10B981" }]}>
+              <Ionicons name="checkmark" size={40} color="#fff" />
+            </View>
             <Text style={styles.successTitle}>Withdrawal Requested!</Text>
             <Text style={styles.successMessage}>Amount: ₹{withdrawAmount}</Text>
-            <Text style={styles.successNote}>Will be credited within 3-5 business days</Text>
+            <View style={styles.successNoteBox}>
+              <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
+              <Text style={styles.successNote}>Will be credited within 3-5 business days</Text>
+            </View>
             <TouchableOpacity style={styles.successButton} onPress={() => setShowSuccessModal(false)}>
               <Text style={styles.successButtonText}>Done</Text>
             </TouchableOpacity>
@@ -468,139 +539,679 @@ export default function TeacherReferEarnScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F3FF",
+  },
+
+  // ===== HEADER =====
   header: {
-    backgroundColor: "#EA580C",
-    padding: 20,
+    backgroundColor: "rgba(0, 48, 150, 1.00)",
     paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  headerTitle: { color: "#fff", fontSize: 20, fontWeight: "bold" },
-  content: { padding: 20 },
+
+  headerBackBtn: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+
+  headerRefreshBtn: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fff",
+  },
+
+  headerSubtitle: {
+    color: "#C7D2FE",
+    fontSize: 14,
+    marginTop: 6,
+  },
+
+  // ===== CONTENT =====
+  content: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+
+  // ===== TEACHER BADGE =====
   teacherBadge: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EA580C",
-    paddingVertical: 8,
+    backgroundColor: "#EEF2FF",
+    paddingVertical: 6,
     paddingHorizontal: 16,
     borderRadius: 20,
     alignSelf: "center",
+    marginTop: -8,
     marginBottom: 16,
-    gap: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
   },
-  teacherBadgeText: { color: "#fff", fontSize: 14, fontWeight: "500" },
+
+  teacherBadgeText: {
+    color: "rgba(0, 48, 150, 1.00)",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+
+  // ===== CARD =====
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
     padding: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
     elevation: 3,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, alignSelf: "flex-start" },
-  cardTitle: { fontSize: 18, fontWeight: "600", color: "#374151" },
-  balance: { fontSize: 40, fontWeight: "bold", color: "#EA580C", marginTop: 8 },
-  balanceLabel: { color: "#6B7280", fontSize: 14, marginBottom: 20 },
-  statsRow: { flexDirection: "row", gap: 12, marginBottom: 20, width: "100%" },
-  statCard: { flex: 1, backgroundColor: "#F8FAFC", borderRadius: 12, padding: 12, alignItems: "center" },
-  statValue: { fontSize: 20, fontWeight: "bold", color: "#1F2937" },
-  statLabel: { fontSize: 12, color: "#6B7280", marginTop: 4 },
-  bankBox: { backgroundColor: "#F0FDF4", padding: 12, borderRadius: 12, marginBottom: 16, width: "100%" },
-  bankRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  bankName: { fontSize: 14, fontWeight: "500", color: "#065F46" },
-  bankDetails: { fontSize: 12, color: "#047857", marginTop: 2 },
+
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+    alignSelf: "flex-start",
+  },
+
+  cardIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+
+  balance: {
+    fontSize: 40,
+    fontWeight: "800",
+    color: "#1E293B",
+    marginTop: 4,
+  },
+
+  balanceLabel: {
+    color: "#94A3B8",
+    fontSize: 13,
+    marginBottom: 16,
+  },
+
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 16,
+  },
+
+  statCard: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+
+  statValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+
+  statLabel: {
+    fontSize: 11,
+    color: "#94A3B8",
+    marginTop: 2,
+  },
+
+  statDividerSmall: {
+    width: 1,
+    height: 30,
+    backgroundColor: "#E2E8F0",
+  },
+
+  // ===== BANK =====
+  bankBox: {
+    backgroundColor: "#F0FDF4",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+  },
+
+  bankRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  bankIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#DCFCE7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  bankInfo: {
+    flex: 1,
+  },
+
+  bankName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#065F46",
+  },
+
+  bankDetails: {
+    fontSize: 11,
+    color: "#047857",
+    marginTop: 2,
+  },
+
+  bankEditBtn: {
+    padding: 6,
+  },
+
   addBankBtn: {
-    backgroundColor: "#FFF7ED",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#EEF2FF",
     paddingVertical: 12,
     borderRadius: 12,
     marginBottom: 16,
     width: "100%",
-    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#FED7AA",
+    borderColor: "#C7D2FE",
     borderStyle: "dashed",
   },
-  addBankText: { color: "#EA580C", fontWeight: "500" },
-  withdrawBtn: { backgroundColor: "#EA580C", paddingVertical: 14, borderRadius: 12, width: "100%", alignItems: "center" },
-  disabledBtn: { backgroundColor: "#D1D5DB" },
-  withdrawText: { color: "#fff", fontWeight: "600" },
-  hint: { color: "#6B7280", fontSize: 12, marginTop: 8, textAlign: "center" },
-  referTitle: { fontSize: 24, fontWeight: "bold", color: "#EA580C", marginTop: 12 },
-  referSubtitle: { fontSize: 14, color: "#6B7280", marginTop: 4 },
-  codeBox: {
-    backgroundColor: "#FFF7ED",
+
+  addBankText: {
+    color: "rgba(0, 48, 150, 1.00)",
+    fontWeight: "500",
+    fontSize: 14,
+  },
+
+  withdrawBtn: {
+    backgroundColor: "rgba(0, 48, 150, 1.00)",
+    paddingVertical: 14,
+    borderRadius: 12,
     width: "100%",
-    paddingVertical: 18,
-    borderRadius: 16,
     alignItems: "center",
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#FB923C",
-    marginVertical: 20,
   },
-  codeLabel: { color: "#78716C", fontSize: 13 },
-  codeText: { fontSize: 24, fontWeight: "bold", color: "#EA580C", letterSpacing: 2, marginTop: 6 },
-  buttonRow: { flexDirection: "row", gap: 12, width: "100%" },
-  copyBtn: { flex: 1, backgroundColor: "#EA580C", paddingVertical: 14, borderRadius: 12, alignItems: "center" },
-  shareBtn: { flex: 1, backgroundColor: "#F59E0B", paddingVertical: 14, borderRadius: 12, alignItems: "center" },
-  btnText: { color: "#fff", fontWeight: "bold" },
-  statsCardLarge: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 20, alignItems: "center" },
-  statsTitle: { fontSize: 16, fontWeight: "bold", color: "#374151", marginBottom: 16 },
-  statsRowLarge: { flexDirection: "row", alignItems: "center", justifyContent: "center", width: "100%" },
-  statItem: { flex: 1, alignItems: "center" },
-  statNumber: { fontSize: 24, fontWeight: "bold", color: "#EA580C" },
-  statSmallLabel: { fontSize: 12, color: "#6B7280", marginTop: 4 },
-  statDivider: { width: 1, height: 40, backgroundColor: "#E5E7EB", marginHorizontal: 20 },
-  infoCard: { backgroundColor: "#FEF3C7", padding: 16, borderRadius: 16, width: "100%" },
-  infoTitle: { fontSize: 16, fontWeight: "bold", color: "#92400E", marginBottom: 12 },
-  infoText: { color: "#92400E", marginBottom: 8, fontSize: 13, opacity: 0.9 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: "bold", color: "#111827" },
+
+  disabledBtn: {
+    opacity: 0.5,
+  },
+
+  withdrawText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+
+  hint: {
+    color: "#94A3B8",
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: "center",
+  },
+
+  // ===== REFERRAL =====
+  referralCard: {
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+  },
+
+  referralIconBg: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+
+  referTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+
+  referSubtitle: {
+    fontSize: 14,
+    color: "#94A3B8",
+    marginTop: 2,
+  },
+
+  codeBox: {
+    backgroundColor: "#EEF2FF",
+    width: "100%",
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    marginVertical: 16,
+  },
+
+  codeLabel: {
+    color: "#94A3B8",
+    fontSize: 12,
+  },
+
+  codeText: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "rgba(0, 48, 150, 1.00)",
+    letterSpacing: 3,
+    marginTop: 4,
+  },
+
+  codeDivider: {
+    width: 40,
+    height: 2,
+    backgroundColor: "#C7D2FE",
+    marginVertical: 8,
+  },
+
+  codeHint: {
+    fontSize: 11,
+    color: "#94A3B8",
+  },
+
+  buttonRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+
+  copyBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "rgba(0, 48, 150, 1.00)",
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+
+  shareBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#7C3AED",
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+
+  btnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+
+  // ===== STATS LARGE =====
+  statsCardLarge: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  statsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  statsTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+
+  statsRowLarge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+
+  statNumber: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "rgba(0, 48, 150, 1.00)",
+  },
+
+  statSmallLabel: {
+    fontSize: 11,
+    color: "#94A3B8",
+    marginTop: 4,
+  },
+
+  statDividerLarge: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#E2E8F0",
+    marginHorizontal: 16,
+  },
+
+  // ===== INFO CARD =====
+  infoCard: {
+    backgroundColor: "#EEF2FF",
+    padding: 16,
+    borderRadius: 16,
+    width: "100%",
+  },
+
+  infoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+
+  stepItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+  },
+
+  stepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  stepNumberText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  infoText: {
+    color: "#4B5563",
+    fontSize: 13,
+    flex: 1,
+  },
+
+  // ===== MODALS =====
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 30,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
     borderRadius: 12,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#F9FAFB",
-    marginBottom: 16,
+    padding: 14,
+    fontSize: 15,
+    backgroundColor: "#F8FAFC",
+    marginBottom: 14,
+    color: "#1E293B",
   },
-  saveBtn: { backgroundColor: "#EA580C", paddingVertical: 14, borderRadius: 12, alignItems: "center", marginTop: 8 },
-  saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+
+  saveBtn: {
+    backgroundColor: "rgba(0, 48, 150, 1.00)",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+
+  saveBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
   bankPreview: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F8FAFC",
     padding: 12,
     borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+
+  bankPreviewInfo: {
+    flex: 1,
+  },
+
+  bankPreviewName: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#1E293B",
+  },
+
+  bankPreviewDetail: {
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+
+  amountInput: {
+    fontSize: 24,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  quickAmounts: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 8,
+    flexWrap: "wrap",
+  },
+
+  quickAmount: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+
+  quickAmountActive: {
+    backgroundColor: "#EEF2FF",
+    borderColor: "rgba(0, 48, 150, 1.00)",
+  },
+
+  quickAmountText: {
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+
+  quickAmountTextActive: {
+    color: "rgba(0, 48, 150, 1.00)",
+  },
+
+  balanceInfo: {
+    textAlign: "center",
+    marginTop: 14,
+    color: "#94A3B8",
+    fontSize: 14,
+  },
+
+  withdrawBtnModal: {
+    backgroundColor: "rgba(0, 48, 150, 1.00)",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 16,
+  },
+
+  // ===== SUCCESS MODALS =====
+  successOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  successModal: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 24,
+    width: "88%",
+    alignItems: "center",
+  },
+
+  successIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+
+  successTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 8,
+  },
+
+  successMessage: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "rgba(0, 48, 150, 1.00)",
+    marginBottom: 6,
+  },
+
+  successNoteBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     marginBottom: 20,
   },
-  bankPreviewName: { fontSize: 14, fontWeight: "500", color: "#374151" },
-  bankPreviewDetail: { fontSize: 12, color: "#6B7280" },
-  amountInput: { fontSize: 24, fontWeight: "bold", textAlign: "center" },
-  quickAmounts: { flexDirection: "row", gap: 12, marginTop: 16, flexWrap: "wrap" },
-  quickAmount: { flex: 1, paddingVertical: 10, backgroundColor: "#FFF7ED", borderRadius: 10, alignItems: "center" },
-  quickAmountText: { color: "#EA580C", fontWeight: "600" },
-  balanceInfo: { textAlign: "center", marginTop: 16, color: "#6B7280" },
-  successOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
-  successModal: { backgroundColor: "#fff", borderRadius: 24, padding: 24, width: "85%", alignItems: "center" },
-  successTitle: { fontSize: 20, fontWeight: "bold", color: "#111827", marginBottom: 16 },
-  successMessage: { fontSize: 16, fontWeight: "600", color: "#EA580C", marginBottom: 8 },
-  successNote: { fontSize: 12, color: "#6B7280", textAlign: "center", marginBottom: 20 },
-  successDetails: { backgroundColor: "#F9FAFB", borderRadius: 12, padding: 16, width: "100%", marginBottom: 20 },
-  successDetailRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  successDetailLabel: { fontSize: 13, color: "#6B7280" },
-  successDetailValue: { fontSize: 13, fontWeight: "600", color: "#111827" },
-  successButton: { backgroundColor: "#EA580C", paddingVertical: 12, borderRadius: 12, width: "100%" },
-  successButtonText: { color: "#fff", fontSize: 16, fontWeight: "600", textAlign: "center" },
+
+  successNote: {
+    fontSize: 12,
+    color: "#94A3B8",
+    textAlign: "center",
+  },
+
+  successDetails: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 14,
+    width: "100%",
+    marginBottom: 18,
+  },
+
+  successDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+
+  successDetailLabel: {
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+
+  successDetailValue: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+
+  successButton: {
+    backgroundColor: "rgba(0, 48, 150, 1.00)",
+    paddingVertical: 12,
+    borderRadius: 12,
+    width: "100%",
+  },
+
+  successButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+  },
 });

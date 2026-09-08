@@ -195,14 +195,14 @@ export default function Index() {
   <FontAwesome name="angle-right" size={24} color={COLOR.background} />
 </TouchableOpacity>
 
-          <TouchableOpacity style={styles.profileCard}>
+          {/* <TouchableOpacity style={styles.profileCard}>
             <View style={styles.row}>
               <Entypo name="lock" size={22} color={COLOR.background} />
               <Text style={styles.cardText}>Change Password</Text>
             </View>
 
             <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity style={styles.profileCard} onPress={handleShare}>
             <View style={styles.row}>

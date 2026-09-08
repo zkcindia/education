@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import RazorpayCheckout from "react-native-razorpay";
 
 import {
@@ -22,6 +23,7 @@ export default function BillingPlanScreen() {
   const [activeTab, setActiveTab] = useState("monthly");
   const [loading, setLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [expandedFAQ, setExpandedFAQ] = useState(null);
 
   useEffect(() => {
     fetchPlans();
@@ -30,7 +32,6 @@ export default function BillingPlanScreen() {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-
       const response = await getAllPlans();
 
       if (response?.monthly) {
@@ -53,9 +54,7 @@ export default function BillingPlanScreen() {
       setPaymentLoading(true);
 
       console.log("1. Gateway API calling...");
-
       const orderData = await createPaymentOrder(plan.price_per_month);
-
       console.log("2. Gateway API response:", orderData);
 
       const options = {
@@ -71,18 +70,15 @@ export default function BillingPlanScreen() {
           contact: "9999999999",
         },
         theme: {
-          color: "#EA580C",
+          color: "#4F46E5",
         },
       };
 
       console.log("3. Razorpay opening...");
-
       const paymentResponse = await RazorpayCheckout.open(options);
-
       console.log("4. Razorpay success response:", paymentResponse);
 
       console.log("5. Verify API calling...");
-
       const verification = await verifyPayment({
         razorpay_payment_id: paymentResponse.razorpay_payment_id,
         razorpay_order_id: paymentResponse.razorpay_order_id,
@@ -110,69 +106,83 @@ export default function BillingPlanScreen() {
 
   const activePlans = plans[activeTab] || [];
 
+  // FAQ Data - Dynamic, can come from API
+  const faqData = [
+    {
+      id: 1,
+      question: "Can I change plans later?",
+      answer: "Yes, your subscription gives access based on your selected plan.",
+    },
+    {
+      id: 2,
+      question: "Do I get all courses?",
+      answer: "Yes, your subscription gives access based on your selected plan.",
+    },
+    {
+      id: 3,
+      question: "Are mock tests included?",
+      answer: "Yes, your subscription gives access based on your selected plan.",
+    },
+    {
+      id: 4,
+      question: "Will I get certificate access?",
+      answer: "Yes, your subscription gives access based on your selected plan.",
+    },
+  ];
+
+  const toggleFAQ = (id) => {
+    setExpandedFAQ(expandedFAQ === id ? null : id);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-        </View>
-
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* ===== HEADER ===== */}
         <View style={styles.header}>
-          <Text style={styles.title}>Choose Your Plan</Text>
-          <Text style={styles.subtitle}>
-            Select one subscription and unlock all courses, tests and notes
-          </Text>
+
+          <Text style={styles.headerTitle}>Choose Your Plan</Text>
+          <View style={{ width: 24 }} />
         </View>
 
+        <Text style={styles.headerSubtitle}>
+          Select one subscription and unlock all courses, tests and notes
+        </Text>
+
+        {/* ===== TAB TOGGLE ===== */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === "monthly" && styles.activeTabButton,
-            ]}
+            style={[styles.tabButton, activeTab === "monthly" && styles.activeTabButton]}
             onPress={() => setActiveTab("monthly")}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "monthly" && styles.activeTabText,
-              ]}
-            >
+            <Text style={[styles.tabText, activeTab === "monthly" && styles.activeTabText]}>
               Monthly
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === "yearly" && styles.activeTabButton,
-            ]}
+            style={[styles.tabButton, activeTab === "yearly" && styles.activeTabButton]}
             onPress={() => setActiveTab("yearly")}
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "yearly" && styles.activeTabText,
-              ]}
-            >
+            <Text style={[styles.tabText, activeTab === "yearly" && styles.activeTabText]}>
               Yearly
             </Text>
           </TouchableOpacity>
         </View>
 
+        {/* ===== PLANS ===== */}
         {loading ? (
-          <ActivityIndicator
-            size="large"
-            color="#EA580C"
-            style={{ marginTop: 40 }}
-          />
+          <ActivityIndicator size="large" color="#4F46E5" style={styles.loader} />
         ) : activePlans.length > 0 ? (
           activePlans.map((plan, index) => (
-            <View key={plan.id || index} style={styles.planCard}>
-              <Text style={styles.planName}>{plan.duration} Plan</Text>
+            <View key={plan.id || index} style={[styles.planCard, index === 0 && styles.popularCard]}>
+              {index === 0 && (
+                <View style={styles.popularBadge}>
+                  <Ionicons name="star" size={12} color="#fff" />
+                  <Text style={styles.popularText}>Popular</Text>
+                </View>
+              )}
 
+              <Text style={styles.planName}>{plan.duration} Plan</Text>
               <Text style={styles.planDescription}>
                 {plan.ideal_for || "Best plan for students"}
               </Text>
@@ -182,57 +192,71 @@ export default function BillingPlanScreen() {
                 <Text style={styles.duration}>/ {plan.duration}</Text>
               </View>
 
+              <View style={styles.divider} />
+
               <View style={styles.featuresBox}>
                 {plan?.key_features?.length > 0 ? (
                   plan.key_features.map((feature, i) => (
-                    <Text key={i} style={styles.featureText}>
-                      ✅ {feature}
-                    </Text>
+                    <View key={i} style={styles.featureRow}>
+                      <Ionicons name="checkmark-circle" size={18} color="#4F46E5" />
+                      <Text style={styles.featureText}>{feature}</Text>
+                    </View>
                   ))
                 ) : (
                   <>
-                    <Text style={styles.featureText}>✅ All Courses</Text>
-                    <Text style={styles.featureText}>✅ Mock Tests</Text>
-                    <Text style={styles.featureText}>✅ Notes Included</Text>
-                    <Text style={styles.featureText}>✅ Certificate Access</Text>
+                    {["All Courses", "Mock Tests", "Notes Included", "Certificate Access"].map((feature, i) => (
+                      <View key={i} style={styles.featureRow}>
+                        <Ionicons name="checkmark-circle" size={18} color="#4F46E5" />
+                        <Text style={styles.featureText}>{feature}</Text>
+                      </View>
+                    ))}
                   </>
                 )}
               </View>
 
               <TouchableOpacity
-                style={[
-                  styles.getStartedButton,
-                  paymentLoading && styles.disabledButton,
-                ]}
+                style={[styles.subscribeButton, paymentLoading && styles.disabledButton]}
                 onPress={() => handlePayment(plan)}
                 disabled={paymentLoading}
               >
-                <Text style={styles.getStartedText}>
+                <Text style={styles.subscribeText}>
                   {paymentLoading ? "Processing..." : "Get Started"}
                 </Text>
               </TouchableOpacity>
             </View>
           ))
         ) : (
-          <Text style={styles.emptyText}>
-            No {activeTab} plans available at the moment.
-          </Text>
+          <Text style={styles.emptyText}>No {activeTab} plans available at the moment.</Text>
         )}
 
-        <View style={styles.faqBox}>
-          <Text style={styles.faqTitle}>Frequently Asked Questions</Text>
+        {/* ===== FAQ SECTION ===== */}
+        <View style={styles.faqCard}>
+          <View style={styles.faqHeader}>
+            <Ionicons name="help-circle" size={22} color="#4F46E5" />
+            <Text style={styles.faqTitle}>Frequently Asked Questions</Text>
+          </View>
 
-          {[
-            "Can I change plans later?",
-            "Do I get all courses?",
-            "Are mock tests included?",
-            "Will I get certificate access?",
-          ].map((question, index) => (
-            <View key={index} style={styles.faqItem}>
-              <Text style={styles.question}>{question}</Text>
-              <Text style={styles.answer}>
-                Yes, your subscription gives access based on your selected plan.
-              </Text>
+          {faqData.map((faq) => (
+            <View key={faq.id} style={styles.faqItem}>
+              <TouchableOpacity
+                style={styles.faqQuestionBtn}
+                onPress={() => toggleFAQ(faq.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.faqQuestion}>{faq.question}</Text>
+                <Ionicons
+                  name={expandedFAQ === faq.id ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color="#94A3B8"
+                />
+              </TouchableOpacity>
+
+              {expandedFAQ === faq.id && (
+                <View style={styles.faqAnswerWrap}>
+                  <View style={styles.faqLine} />
+                  <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                </View>
+              )}
             </View>
           ))}
         </View>
@@ -244,169 +268,257 @@ export default function BillingPlanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F5F3FF",
   },
 
-  topBar: {
-    paddingHorizontal: 20,
-    paddingTop: 45,
+  scrollContent: {
+    paddingBottom: 30,
   },
 
-  backText: {
-    color: "#EA580C",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
+  // ===== HEADER =====
   header: {
-    paddingHorizontal: 20,
-    marginTop: 28,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 8,
   },
 
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#111827",
-    textAlign: "center",
+  backButton: {
+    padding: 4,
   },
 
-  subtitle: {
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+
+  headerSubtitle: {
+    fontSize: 14,
     color: "#6B7280",
-    textAlign: "center",
-    marginTop: 10,
-    fontSize: 16,
-    lineHeight: 22,
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
 
+  // ===== TAB =====
   tabContainer: {
     flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 28,
-    gap: 12,
+    marginHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
   },
 
   tabButton: {
-    backgroundColor: "#E5E7EB",
-    paddingHorizontal: 28,
+    flex: 1,
     paddingVertical: 10,
     borderRadius: 10,
+    alignItems: "center",
   },
 
   activeTabButton: {
-    backgroundColor: "#EA580C",
+    backgroundColor: "#4F46E5",
   },
 
   tabText: {
-    color: "#374151",
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
   },
 
   activeTabText: {
-    color: "#fff",
+    color: "#FFFFFF",
   },
 
+  loader: {
+    marginTop: 30,
+  },
+
+  // ===== PLAN CARD =====
   planCard: {
-    marginHorizontal: 20,
-    marginTop: 25,
-    backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 22,
-    elevation: 4,
+    marginHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 3,
+  },
+
+  popularCard: {
+    borderWidth: 2,
+    borderColor: "#4F46E5",
+  },
+
+  popularBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#4F46E5",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 16,
+    alignSelf: "flex-start",
+    marginBottom: 8,
+  },
+
+  popularText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
   },
 
   planName: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#111827",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
   },
 
   planDescription: {
+    fontSize: 14,
     color: "#6B7280",
-    marginTop: 8,
-    fontSize: 15,
+    marginTop: 2,
   },
 
   priceRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    marginTop: 20,
+    alignItems: "baseline",
+    marginTop: 10,
   },
 
   price: {
-    fontSize: 38,
-    fontWeight: "bold",
-    color: "#111827",
+    fontSize: 30,
+    fontWeight: "700",
+    color: "#1E293B",
   },
 
   duration: {
+    fontSize: 14,
     color: "#6B7280",
-    marginLeft: 5,
-    marginBottom: 7,
+    marginLeft: 4,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginVertical: 12,
   },
 
   featuresBox: {
-    marginTop: 22,
+    gap: 8,
+  },
+
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   featureText: {
-    color: "#374151",
-    fontSize: 15,
-    marginBottom: 12,
+    fontSize: 14,
+    color: "#334155",
   },
 
-  getStartedButton: {
-    backgroundColor: "#EA580C",
-    paddingVertical: 15,
-    borderRadius: 14,
+  subscribeButton: {
+    backgroundColor: "#4F46E5",
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: "center",
-    marginTop: 18,
+    marginTop: 14,
+  },
+
+  subscribeText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 15,
   },
 
   disabledButton: {
     opacity: 0.6,
   },
 
-  getStartedText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-
   emptyText: {
     textAlign: "center",
     color: "#6B7280",
-    marginTop: 40,
-    fontSize: 16,
+    marginTop: 30,
+    fontSize: 15,
+    marginHorizontal: 16,
   },
 
-  faqBox: {
-    marginHorizontal: 20,
-    marginTop: 35,
-    marginBottom: 40,
+  // ===== FAQ =====
+  faqCard: {
+    marginHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    marginTop: 10,
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  faqHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
   },
 
   faqTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 15,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1E293B",
   },
 
   faqItem: {
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingVertical: 14,
+    borderBottomColor: "#F1F5F9",
+    paddingVertical: 10,
   },
 
-  question: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
+  faqQuestionBtn: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 
-  answer: {
-    color: "#6B7280",
+  faqQuestion: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#1E293B",
+    flex: 1,
+    marginRight: 10,
+  },
+
+  faqAnswerWrap: {
+    flexDirection: "row",
     marginTop: 6,
+  },
+
+  faqLine: {
+    width: 3,
+    backgroundColor: "#4F46E5",
+    borderRadius: 2,
+    marginRight: 10,
+  },
+
+  faqAnswer: {
+    fontSize: 13,
+    color: "#6B7280",
+    lineHeight: 20,
+    flex: 1,
   },
 });

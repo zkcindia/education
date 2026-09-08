@@ -246,7 +246,7 @@ export default function Index() {
             <FontAwesome name="angle-right" size={24} color={COLOR.background} />
           </TouchableOpacity> */}
 
-          <TouchableOpacity style={styles.profileCard}>
+          {/* <TouchableOpacity style={styles.profileCard}>
             <View style={styles.optionRow}>
               <Entypo name="lock" size={22} color={COLOR.background} />
               <Text style={styles.optionText}>Change Password</Text>
@@ -257,7 +257,7 @@ export default function Index() {
               size={24}
               color={COLOR.background}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* <TouchableOpacity style={styles.profileCard}>
             <View style={styles.optionRow}>

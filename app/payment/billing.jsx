@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { myPayments } from "../../constants/api/apiPayment";
 
 export default function BillingScreen() {
@@ -22,7 +23,6 @@ export default function BillingScreen() {
   const fetchPaymentsData = async () => {
     try {
       setLoading(true);
-
       const response = await myPayments();
 
       if (response?.payments) {
@@ -42,7 +42,6 @@ export default function BillingScreen() {
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-
     return new Date(dateString).toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
@@ -50,53 +49,49 @@ export default function BillingScreen() {
     });
   };
 
+  // Dummy data for subscription (will be dynamic from API)
+  const subscriptionData = {
+    plan_name: "Premium",
+    amount: "499",
+    status: "active",
+    renewal_date: "2026-10-15",
+  };
+
+  const isActive = subscriptionData.status === "active";
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-        </View>
-
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* ===== HEADER ===== */}
         <View style={styles.header}>
-          <Text style={styles.title}>Billing</Text>
-          <Text style={styles.subtitle}>
-            Manage your subscription and payment history
-          </Text>
+
+          <Text style={styles.headerTitle}>Billing</Text>
+          <View style={{ width: 24 }} />
         </View>
 
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>🎓</Text>
+        <Text style={styles.headerSubtitle}>Manage your subscription and payment history</Text>
+
+        {/* ===== SUBSCRIPTION CARD ===== */}
+        <View style={styles.subscriptionCard}>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="school-outline" size={22} color="#4F46E5" />
+            </View>
+            <Text style={styles.cardTitle}>Subscription Settings</Text>
           </View>
 
-          <View style={{ flex: 1 }}>
-            <Text style={styles.profileName}>Education App</Text>
-
-            <View style={styles.infoRow}>
-              <View>
-                <Text style={styles.label}>Current Plan</Text>
-                <Text style={styles.planBadge}>Free / Premium</Text>
-              </View>
-
-              <View>
-                <Text style={styles.label}>Status</Text>
-                <Text style={styles.activeText}>Active</Text>
-              </View>
+          <View style={styles.planRow}>
+            <Text style={styles.planLabel}>Current Plan:</Text>
+            <Text style={styles.planName}>{subscriptionData.plan_name}</Text>
+            <View style={[styles.statusBadge, isActive ? styles.activeBadge : styles.inactiveBadge]}>
+              <Text style={[styles.statusText, isActive ? styles.activeText : styles.inactiveText]}>
+                {isActive ? "Active" : "Inactive"}
+              </Text>
             </View>
           </View>
-        </View>
-
-        <View style={styles.subscriptionCard}>
-          <Text style={styles.cardTitle}>Subscription Settings</Text>
-
-          <Text style={styles.currentPlan}>
-            Current Plan: <Text style={styles.orangeText}>Free</Text>
-          </Text>
 
           <Text style={styles.billingText}>
-            Next billing date: No active subscription
+            Next billing date: {subscriptionData.renewal_date ? formatDate(subscriptionData.renewal_date) : "No active subscription"}
           </Text>
 
           <TouchableOpacity
@@ -107,47 +102,72 @@ export default function BillingScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.invoiceCard}>
-          <Text style={styles.cardTitle}>Invoice History</Text>
+        {/* ===== PAYMENT HISTORY ===== */}
+        <View style={styles.historyCard}>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="receipt-outline" size={22} color="#4F46E5" />
+            </View>
+            <Text style={styles.cardTitle}>Invoice History</Text>
+            {paymentsData.length > 0 && (
+              <Text style={styles.historyCount}>{paymentsData.length} transactions</Text>
+            )}
+          </View>
 
           {loading ? (
-            <ActivityIndicator size="large" color="#EA580C" style={{ marginTop: 30 }} />
+            <ActivityIndicator size="large" color="#4F46E5" style={styles.loader} />
           ) : paymentsData.length > 0 ? (
-            paymentsData.map((payment, index) => (
-              <View key={payment.order_id || index} style={styles.paymentItem}>
-                <View>
-                  <Text style={styles.paymentDate}>
-                    {formatDate(payment.created_at)}
-                  </Text>
-                  <Text style={styles.paymentMethod}>
-                    Method: {payment.method || "N/A"}
-                  </Text>
-                </View>
+            <>
+              {paymentsData.map((payment, index) => (
+                <View key={payment.order_id || index} style={styles.paymentItem}>
+                  <View style={styles.paymentLeft}>
+                    <View style={[
+                      styles.paymentIcon,
+                      payment.status === true ? styles.paidIcon : styles.pendingIcon
+                    ]}>
+                      <Ionicons
+                        name={payment.status === true ? "checkmark" : "time"}
+                        size={14}
+                        color="#fff"
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.paymentDate}>
+                        {formatDate(payment.created_at)}
+                      </Text>
+                      <Text style={styles.paymentMethod}>
+                        {payment.method || "N/A"}
+                      </Text>
+                    </View>
+                  </View>
 
-                <View style={{ alignItems: "flex-end" }}>
-                  <Text style={styles.paymentAmount}>
-                    {payment.currency || "INR"} {Number(payment.amount || 0).toFixed(2)}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.statusBadge,
-                      payment.status === true ? styles.paidBadge : styles.pendingBadge,
-                    ]}
-                  >
-                    {payment.status === true ? "Paid" : "Pending"}
-                  </Text>
+                  <View style={styles.paymentRight}>
+                    <Text style={styles.paymentAmount}>
+                      {payment.currency || "₹"} {Number(payment.amount || 0).toFixed(2)}
+                    </Text>
+                    <View style={[
+                      styles.statusTag,
+                      payment.status === true ? styles.paidTag : styles.pendingTag,
+                    ]}>
+                      <Text style={[
+                        styles.statusTagText,
+                        payment.status === true ? styles.paidTagText : styles.pendingTagText,
+                      ]}>
+                        {payment.status === true ? "Paid" : "Pending"}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
+              ))}
+              <View style={styles.totalRow}>
+                <Text style={styles.totalText}>Total Payments: {paymentsData.length}</Text>
               </View>
-            ))
+            </>
           ) : (
-            <Text style={styles.emptyText}>No payment history found</Text>
-          )}
-
-          {paymentsData.length > 0 && (
-            <Text style={styles.totalText}>
-              Total Payments: {paymentsData.length}
-            </Text>
+            <View style={styles.emptyHistory}>
+              <Ionicons name="receipt-outline" size={48} color="#CBD5E1" />
+              <Text style={styles.emptyText}>No payment history found</Text>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -158,211 +178,267 @@ export default function BillingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F5F3FF",
   },
 
-  headerRow: {
+  scrollContent: {
+    paddingBottom: 30,
+  },
+
+  // ===== HEADER =====
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 45,
+    paddingTop: 50,
+    paddingBottom: 8,
   },
 
   backButton: {
-    alignSelf: "flex-start",
-    backgroundColor: "#EF4444",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    padding: 4,
   },
 
-  backText: {
-    color: "#fff",
+  headerTitle: {
+    fontSize: 22,
     fontWeight: "700",
+    color: "#1E293B",
   },
 
-  header: {
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
     paddingHorizontal: 20,
-    marginTop: 20,
+    marginBottom: 16,
   },
 
-  title: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: "#EA580C",
-  },
-
-  subtitle: {
-    color: "#6B7280",
-    marginTop: 6,
-    fontSize: 15,
-  },
-
-  profileCard: {
-    marginHorizontal: 20,
-    marginTop: 25,
-    backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    elevation: 3,
-  },
-
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#FED7AA",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-
-  avatarText: {
-    fontSize: 30,
-  },
-
-  profileName: {
-    fontSize: 21,
-    fontWeight: "bold",
-    color: "#1F2937",
-  },
-
-  infoRow: {
-    flexDirection: "row",
-    gap: 28,
-    marginTop: 10,
-  },
-
-  label: {
-    color: "#6B7280",
-    fontSize: 12,
-  },
-
-  planBadge: {
-    color: "#EA580C",
-    fontWeight: "700",
-    marginTop: 2,
-  },
-
-  activeText: {
-    color: "#22C55E",
-    fontWeight: "700",
-    marginTop: 2,
-  },
-
+  // ===== SUBSCRIPTION CARD =====
   subscriptionCard: {
-    marginHorizontal: 20,
-    marginTop: 22,
-    backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 20,
+    marginHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
     elevation: 3,
+  },
+
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
   },
 
   cardTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#374151",
-    marginBottom: 15,
-  },
-
-  currentPlan: {
-    color: "#374151",
     fontSize: 16,
     fontWeight: "600",
+    color: "#1E293B",
   },
 
-  orangeText: {
-    color: "#EA580C",
-  },
-
-  billingText: {
-    color: "#6B7280",
-    marginTop: 8,
-  },
-
-  changePlanButton: {
-    backgroundColor: "#EA580C",
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 18,
-  },
-
-  changePlanText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-
-  invoiceCard: {
-    marginHorizontal: 20,
-    marginTop: 22,
-    marginBottom: 35,
-    backgroundColor: "#fff",
-    borderRadius: 22,
-    padding: 20,
-    elevation: 3,
-  },
-
-  paymentItem: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
+  planRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 6,
   },
 
-  paymentDate: {
+  planLabel: {
     fontSize: 15,
-    fontWeight: "700",
-    color: "#374151",
-  },
-
-  paymentMethod: {
     color: "#6B7280",
-    marginTop: 5,
-    textTransform: "capitalize",
   },
 
-  paymentAmount: {
-    fontWeight: "bold",
-    color: "#111827",
+  planName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
   },
 
   statusBadge: {
-    marginTop: 8,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 20,
-    overflow: "hidden",
-    fontSize: 12,
-    fontWeight: "700",
   },
 
-  paidBadge: {
+  activeBadge: {
     backgroundColor: "#DCFCE7",
+  },
+
+  inactiveBadge: {
+    backgroundColor: "#FEE2E2",
+  },
+
+  statusText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  activeText: {
     color: "#15803D",
   },
 
-  pendingBadge: {
-    backgroundColor: "#FFEDD5",
-    color: "#C2410C",
+  inactiveText: {
+    color: "#DC2626",
   },
 
-  emptyText: {
-    textAlign: "center",
+  billingText: {
+    fontSize: 14,
     color: "#6B7280",
-    paddingVertical: 25,
+    marginTop: 4,
+  },
+
+  changePlanButton: {
+    backgroundColor: "#4F46E5",
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 16,
+  },
+
+  changePlanText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+
+  // ===== HISTORY CARD =====
+  historyCard: {
+    marginHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 3,
+  },
+
+  historyCount: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginLeft: "auto",
+    fontWeight: "500",
+  },
+
+  loader: {
+    marginVertical: 20,
+  },
+
+  paymentItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+
+  paymentLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  paymentIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  paidIcon: {
+    backgroundColor: "#22C55E",
+  },
+
+  pendingIcon: {
+    backgroundColor: "#F59E0B",
+  },
+
+  paymentDate: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+
+  paymentMethod: {
+    fontSize: 12,
+    color: "#6B7280",
+    textTransform: "capitalize",
+  },
+
+  paymentRight: {
+    alignItems: "flex-end",
+  },
+
+  paymentAmount: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+
+  statusTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginTop: 2,
+  },
+
+  paidTag: {
+    backgroundColor: "#DCFCE7",
+  },
+
+  pendingTag: {
+    backgroundColor: "#FEF3C7",
+  },
+
+  statusTagText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+
+  paidTagText: {
+    color: "#15803D",
+  },
+
+  pendingTagText: {
+    color: "#D97706",
+  },
+
+  totalRow: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
   },
 
   totalText: {
-    borderTopWidth: 1,
-    borderColor: "#E5E7EB",
-    paddingTop: 12,
-    marginTop: 10,
+    fontSize: 13,
     color: "#6B7280",
+  },
+
+  emptyHistory: {
+    alignItems: "center",
+    paddingVertical: 24,
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: "#94A3B8",
+    marginTop: 6,
   },
 });
