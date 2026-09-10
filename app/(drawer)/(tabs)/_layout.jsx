@@ -39,7 +39,16 @@ export default function Layout() {
       })}
     >
       <Tabs.Screen name='home'  options={{title:'HOME'}}/>
-      <Tabs.Screen name='classes' options={{title:'CLASSES'}}/>
+      {/* <Tabs.Screen name='classes' options={{title:'CLASSES'}}/> */}
+
+      <Tabs.Screen 
+  name='classes' 
+  options={{
+    title: 'CLASSES',
+    href: '/top-scorers',  // 👈 YEH ADD KARO
+    headerShown: false,
+  }} 
+/>
       {/* <Tabs.Screen name='inbox' options={{title:'INBOX'}} /> */}
 
         {/* Hide inbox */}

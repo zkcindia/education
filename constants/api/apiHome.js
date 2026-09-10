@@ -110,7 +110,6 @@
     }
   };
 
-// apiHome.js - Add this function
 
 // apiHome.js - Simple Points Fetch
 export const fetchUserPoints = async () => {
@@ -123,7 +122,9 @@ export const fetchUserPoints = async () => {
     if (!userId) return 0;
 
     const response = await axios.get(`${API_URL}/user/${userId}/points/`);
-    return response.data?.["total points"] || 0;
+    
+    // ✅ FIX: "total_points" (underscore)
+    return response.data?.["total_points"] || 0;
   } catch (error) {
     return 0;
   }
