@@ -20,7 +20,7 @@ import {
 
 export default function BillingPlanScreen() {
   const [plans, setPlans] = useState({ monthly: [], yearly: [] });
-  const [activeTab, setActiveTab] = useState("monthly");
+  const [activeTab, setActiveTab] = useState("yearly");
   const [loading, setLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState(null);
@@ -151,14 +151,14 @@ export default function BillingPlanScreen() {
 
         {/* ===== TAB TOGGLE ===== */}
         <View style={styles.tabContainer}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.tabButton, activeTab === "monthly" && styles.activeTabButton]}
             onPress={() => setActiveTab("monthly")}
           >
             <Text style={[styles.tabText, activeTab === "monthly" && styles.activeTabText]}>
               Monthly
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             style={[styles.tabButton, activeTab === "yearly" && styles.activeTabButton]}

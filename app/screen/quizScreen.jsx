@@ -76,7 +76,7 @@ const checkLockAndStart = async () => {
       }
     }
     
-    // 2️⃣ Check quiz attempt status from API
+    // 2️⃣ Check quiz attempt status from API (BEFORE questions)
     const attemptResponse = await getLastQuizAttempt();
     const last = attemptResponse.data?.data;
 
@@ -85,13 +85,18 @@ const checkLockAndStart = async () => {
     // 3️⃣ If same subject
     if (last && Number(last.subject_id) === Number(id)) {
       
+      // ✅ FIX: created_at ko parse karo (space → T)
+      const createdAt = new Date(last.created_at.replace(' ', 'T'));
+      console.log('📅 Created At:', createdAt);
+      console.log('📅 Now:', new Date());
+      
       // ✅ PASSED → Block for 24 hours from created_at
       if (last.passed === true) {
-        const createdAt = new Date(last.created_at);
-        const unblockAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000); // +24 hours
+        const unblockAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
         const now = new Date();
         
-        // ✅ Agar 24 hours nahi hue toh block karo
+        console.log('📅 Unblock At:', unblockAt);
+        
         if (now < unblockAt) {
           setLocked(true);
           setLockInfo({
@@ -110,13 +115,12 @@ const checkLockAndStart = async () => {
           }));
           
           setLoading(false);
-          return;
+          return;  // ✅ Quiz start nahi hoga
         }
       }
 
       // ✅ FAILED 3 times → Block for 24 hours from created_at
       if (last.passed === false && Number(last.attempt_no) >= 3) {
-        const createdAt = new Date(last.created_at);
         const unblockAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
         const now = new Date();
         
@@ -138,7 +142,7 @@ const checkLockAndStart = async () => {
           }));
           
           setLoading(false);
-          return;
+          return;  // ✅ Quiz start nahi hoga
         }
       }
     }
