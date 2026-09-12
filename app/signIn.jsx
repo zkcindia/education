@@ -234,7 +234,7 @@ export default function signUp() {
           Didn't have an account?
         </Text>
 
-        <TouchableOpacity onPress={() => navigation.navigate('signUp')}>
+        <TouchableOpacity onPress={() => navigation.navigate('RoleSelection')}>
           <Text style={{ color: '#003096', fontFamily: 'roboto-bold' }}>
             Sign up Here
           </Text>
