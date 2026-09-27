@@ -129,3 +129,41 @@ export const fetchUserPoints = async () => {
     return 0;
   }
 };
+
+
+export const fetchUserRank = async () => {
+  try {
+    const token = await AsyncStorage.getItem('access');
+
+    console.log('🔑 RANK TOKEN:', token);
+
+    if (!token) {
+      console.warn('⚠️ No access token found — user not logged in?');
+      return { rank: 0, totalPoints: 0, totalUsers: 0 };
+    }
+
+    const response = await axios.get(`${API_URL}/user/rank/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = response.data;
+
+    if (data?.status) {
+      return {
+        rank: data.rank || 0,
+        totalPoints: data.total_points || 0,
+        totalUsers: data.total_users || 0,
+        userId: data.user_id,
+        email: data.email,
+      };
+    }
+
+    return { rank: 0, totalPoints: 0, totalUsers: 0 };
+  } catch (error) {
+    console.error('❌ fetchUserRank error:', error.response?.data || error.message);
+    return { rank: 0, totalPoints: 0, totalUsers: 0 };
+  }
+};

@@ -268,7 +268,7 @@ export default function TopScorersPage() {
         >
           <Feather name="arrow-left" size={24} color="#1e3a8a" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>🏆 Top Scorers</Text>
+        <Text style={styles.headerTitle}>🏆 Top Scorersssss</Text>
         <TouchableOpacity 
           style={styles.headerRefreshButton}
           onPress={onRefresh}

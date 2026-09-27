@@ -45,7 +45,8 @@ export default function Layout() {
   name='classes' 
   options={{
     title: 'CLASSES',
-    href: '/top-scorers',  // 👈 YEH ADD KARO
+    // href: '/top-scorers', 
+    // herf: '/classes' // 👈 YEH ADD KARO
     headerShown: false,
   }} 
 />

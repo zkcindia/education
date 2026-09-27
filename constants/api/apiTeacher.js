@@ -204,3 +204,23 @@ export const getClassesByBoard = async (boardName) => {
     }
 };
 
+// ✅ Get Top Teachers (dynamic)
+export const getTopTeachers = async () => {
+  try {
+    const token = await AsyncStorage.getItem('access');
+
+    console.log('🔑 TOP TEACHERS TOKEN:', token);
+
+    const response = await axios.get(`${API_URL}/top-five-teachers/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ API Error - Get Top Teachers:', error.response?.data || error.message);
+    throw error;
+  }
+};

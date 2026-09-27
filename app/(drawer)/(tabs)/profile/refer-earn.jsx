@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,8 +11,12 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Animated,
+  Easing,
+  Dimensions,
 } from "react-native";
 import { Feather, MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
@@ -23,6 +27,8 @@ import {
   updateBankDetails,
   getBankDetails,
 } from "../../../../constants/api/apiPayment";
+
+const { width } = Dimensions.get("window");
 
 export default function ReferEarnScreen() {
   const [user, setUser] = useState(null);
@@ -45,6 +51,33 @@ export default function ReferEarnScreen() {
     accountNumber: "",
     ifscCode: "",
     accountHolderName: "",
+  });
+
+  // 🎈 Floating animation for header icon
+  const floatAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  const translateY = floatAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -5],
   });
 
   useEffect(() => {
@@ -177,16 +210,44 @@ export default function ReferEarnScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* ===== SIMPLE HEADER ===== */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBackBtn}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Refer & Earn</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      {/* ===== 🔵 GRADIENT HEADER ===== */}
+      <LinearGradient
+        colors={["#4F46E5", "#6D28D9", "#7C3AED"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        {/* Decorative Circles */}
+        <View style={styles.decorCircle1} />
+        <View style={styles.decorCircle2} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerBackBtn}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>Refer & Earn</Text>
+
+        {/* 🎁 Animated Icon (Right Side) */}
+        <Animated.View
+          style={[
+            styles.headerIconBox,
+            { transform: [{ translateY }] },
+          ]}
+        >
+          <View style={styles.headerGlowCircle} />
+          <Text style={styles.headerIconEmoji}>🎁</Text>
+          <Text style={styles.headerIconEmojiSmall}>✏️</Text>
+        </Animated.View>
+      </LinearGradient>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ===== WALLET CARD ===== */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -214,7 +275,10 @@ export default function ReferEarnScreen() {
                     {bankAccount.bankName} • {maskAccount(bankAccount.accountNumber)}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => setShowBankModal(true)} style={styles.bankEditBtn}>
+                <TouchableOpacity
+                  onPress={() => setShowBankModal(true)}
+                  style={styles.bankEditBtn}
+                >
                   <Feather name="edit-2" size={16} color="#4F46E5" />
                 </TouchableOpacity>
               </View>
@@ -230,15 +294,22 @@ export default function ReferEarnScreen() {
           )}
 
           <TouchableOpacity
-            style={[styles.withdrawBtn, (!hasBankDetails || walletBalance < 100) && styles.disabledBtn]}
+            style={[
+              styles.withdrawBtn,
+              (!hasBankDetails || walletBalance < 100) && styles.disabledBtn,
+            ]}
             onPress={() => setShowWithdrawModal(true)}
             disabled={!hasBankDetails || walletBalance < 100}
           >
             <Text style={styles.withdrawText}>Withdraw</Text>
           </TouchableOpacity>
 
-          {!hasBankDetails && !fetchingBank && <Text style={styles.hint}>Add bank details to withdraw</Text>}
-          {hasBankDetails && walletBalance < 100 && <Text style={styles.hint}>Minimum withdrawal: ₹100</Text>}
+          {!hasBankDetails && !fetchingBank && (
+            <Text style={styles.hint}>Add bank details to withdraw</Text>
+          )}
+          {hasBankDetails && walletBalance < 100 && (
+            <Text style={styles.hint}>Minimum withdrawal: ₹100</Text>
+          )}
         </View>
 
         {/* ===== REFERRAL CARD ===== */}
@@ -418,7 +489,8 @@ export default function ReferEarnScreen() {
                     {bankAccount.accountHolderName}
                   </Text>
                   <Text style={styles.bankPreviewDetail}>
-                    {bankAccount.bankName} • {maskAccount(bankAccount.accountNumber)}
+                    {bankAccount.bankName} •{" "}
+                    {maskAccount(bankAccount.accountNumber)}
                   </Text>
                 </View>
               </View>
@@ -435,12 +507,22 @@ export default function ReferEarnScreen() {
 
             <View style={styles.quickAmounts}>
               {[100, 200, 500].map((amt) => (
-                <TouchableOpacity 
-                  key={amt} 
-                  style={[styles.quickAmount, withdrawAmount === amt.toString() && styles.quickAmountActive]} 
+                <TouchableOpacity
+                  key={amt}
+                  style={[
+                    styles.quickAmount,
+                    withdrawAmount === amt.toString() &&
+                      styles.quickAmountActive,
+                  ]}
                   onPress={() => setWithdrawAmount(amt.toString())}
                 >
-                  <Text style={[styles.quickAmountText, withdrawAmount === amt.toString() && styles.quickAmountTextActive]}>
+                  <Text
+                    style={[
+                      styles.quickAmountText,
+                      withdrawAmount === amt.toString() &&
+                        styles.quickAmountTextActive,
+                    ]}
+                  >
                     ₹{amt}
                   </Text>
                 </TouchableOpacity>
@@ -450,9 +532,15 @@ export default function ReferEarnScreen() {
             <Text style={styles.balanceInfo}>Available: ₹{walletBalance}</Text>
 
             <TouchableOpacity
-              style={[styles.withdrawBtn, (!withdrawAmount || Number(withdrawAmount) < 100) && styles.disabledBtn]}
+              style={[
+                styles.withdrawBtn,
+                (!withdrawAmount || Number(withdrawAmount) < 100) &&
+                  styles.disabledBtn,
+              ]}
               onPress={handleWithdraw}
-              disabled={withdrawing || !withdrawAmount || Number(withdrawAmount) < 100}
+              disabled={
+                withdrawing || !withdrawAmount || Number(withdrawAmount) < 100
+              }
             >
               <Text style={styles.withdrawText}>
                 {withdrawing ? "Processing..." : "Withdraw"}
@@ -478,7 +566,9 @@ export default function ReferEarnScreen() {
             <View style={styles.successDetails}>
               <View style={styles.successDetailRow}>
                 <Text style={styles.successDetailLabel}>Amount</Text>
-                <Text style={styles.successDetailValue}>₹{withdrawAmount}</Text>
+                <Text style={styles.successDetailValue}>
+                  ₹{withdrawAmount}
+                </Text>
               </View>
               <View style={styles.successDetailRow}>
                 <Text style={styles.successDetailLabel}>Bank</Text>
@@ -520,28 +610,90 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F3FF",
   },
 
-  // ===== HEADER =====
+  // ===== 🔵 GRADIENT HEADER =====
   header: {
-  backgroundColor: "rgba(0, 48, 150, 1.00)", 
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: "hidden",
+    position: "relative",
+  },
+
+  // Decorative Circles
+  decorCircle1: {
+    position: "absolute",
+    top: -20,
+    right: -40,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(255,255,255,0.10)",
+  },
+  decorCircle2: {
+    position: "absolute",
+    bottom: -20,
+    left: -40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
 
   headerBackBtn: {
-    padding: 4,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.20)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
   },
 
   headerTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: "roboto-bold",
     color: "#fff",
     letterSpacing: 0.5,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    zIndex: 1,
+  },
+
+  // 🎁 Header Icon Box
+  headerIconBox: {
+    width: 55,
+    height: 45,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+    zIndex: 2,
+  },
+  headerGlowCircle: {
+    position: "absolute",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  headerIconEmoji: {
+    fontSize: 32,
+    textShadowColor: "rgba(0,0,0,0.25)",
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
+  },
+  headerIconEmojiSmall: {
+    position: "absolute",
+    fontSize: 15,
+    right: 0,
+    bottom: 0,
+    transform: [{ rotate: "25deg" }],
   },
 
   // ===== CONTENT =====
@@ -590,13 +742,13 @@ const styles = StyleSheet.create({
 
   cardTitle: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "roboto-bold",
     color: "#1E293B",
   },
 
   balance: {
     fontSize: 38,
-    fontWeight: "800",
+    fontFamily: "roboto-bold",
     color: "#1E293B",
     marginTop: 2,
   },
@@ -605,6 +757,7 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     fontSize: 12,
     marginBottom: 14,
+    fontFamily: "roboto",
   },
 
   // ===== BANK =====
@@ -639,7 +792,7 @@ const styles = StyleSheet.create({
 
   bankName: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: "roboto-bold",
     color: "#065F46",
   },
 
@@ -647,6 +800,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#047857",
     marginTop: 1,
+    fontFamily: "roboto",
   },
 
   bankEditBtn: {
@@ -670,12 +824,12 @@ const styles = StyleSheet.create({
 
   addBankText: {
     color: "#4F46E5",
-    fontWeight: "500",
+    fontFamily: "roboto-bold",
     fontSize: 14,
   },
 
   withdrawBtn: {
- backgroundColor: "rgba(0, 48, 150, 1.00)",
+    backgroundColor: "#4F46E5",
     paddingVertical: 14,
     borderRadius: 12,
     width: "100%",
@@ -688,7 +842,7 @@ const styles = StyleSheet.create({
 
   withdrawText: {
     color: "#fff",
-    fontWeight: "600",
+    fontFamily: "roboto-bold",
     fontSize: 14,
   },
 
@@ -697,6 +851,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 8,
     textAlign: "center",
+    fontFamily: "roboto",
   },
 
   // ===== REFERRAL =====
@@ -712,7 +867,7 @@ const styles = StyleSheet.create({
 
   referTitle: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "roboto-bold",
     color: "#1E293B",
   },
 
@@ -728,11 +883,12 @@ const styles = StyleSheet.create({
   codeLabel: {
     color: "#94A3B8",
     fontSize: 11,
+    fontFamily: "roboto",
   },
 
   codeText: {
     fontSize: 24,
-    fontWeight: "800",
+    fontFamily: "roboto-bold",
     color: "#4F46E5",
     letterSpacing: 3,
     marginTop: 3,
@@ -762,7 +918,7 @@ const styles = StyleSheet.create({
 
   btnText: {
     color: "#fff",
-    fontWeight: "600",
+    fontFamily: "roboto-bold",
     fontSize: 14,
   },
 
@@ -789,7 +945,7 @@ const styles = StyleSheet.create({
 
   statValue: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "roboto-bold",
     color: "#4F46E5",
   },
 
@@ -797,6 +953,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#94A3B8",
     marginTop: 2,
+    fontFamily: "roboto",
   },
 
   statDivider: {
@@ -829,7 +986,7 @@ const styles = StyleSheet.create({
 
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: "roboto-bold",
     color: "#1E293B",
   },
 
@@ -842,6 +999,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
     marginBottom: 14,
     color: "#1E293B",
+    fontFamily: "roboto",
   },
 
   saveBtn: {
@@ -855,7 +1013,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: "#fff",
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "roboto-bold",
   },
 
   bankPreview: {
@@ -876,18 +1034,19 @@ const styles = StyleSheet.create({
 
   bankPreviewName: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: "roboto-bold",
     color: "#1E293B",
   },
 
   bankPreviewDetail: {
     fontSize: 11,
     color: "#94A3B8",
+    fontFamily: "roboto",
   },
 
   amountInput: {
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: "roboto-bold",
     textAlign: "center",
   },
 
@@ -914,7 +1073,7 @@ const styles = StyleSheet.create({
 
   quickAmountText: {
     color: "#6B7280",
-    fontWeight: "500",
+    fontFamily: "roboto-bold",
   },
 
   quickAmountTextActive: {
@@ -926,6 +1085,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: "#94A3B8",
     fontSize: 13,
+    fontFamily: "roboto",
   },
 
   // ===== SUCCESS MODALS =====
@@ -950,7 +1110,7 @@ const styles = StyleSheet.create({
 
   successTitle: {
     fontSize: 19,
-    fontWeight: "700",
+    fontFamily: "roboto-bold",
     color: "#1E293B",
     marginBottom: 6,
   },
@@ -960,6 +1120,7 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     textAlign: "center",
     marginBottom: 16,
+    fontFamily: "roboto",
   },
 
   successDetails: {
@@ -979,11 +1140,12 @@ const styles = StyleSheet.create({
   successDetailLabel: {
     fontSize: 12,
     color: "#94A3B8",
+    fontFamily: "roboto",
   },
 
   successDetailValue: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: "roboto-bold",
     color: "#1E293B",
   },
 
@@ -992,6 +1154,7 @@ const styles = StyleSheet.create({
     color: "#4F46E5",
     textAlign: "center",
     marginBottom: 16,
+    fontFamily: "roboto",
   },
 
   successButton: {
@@ -1004,7 +1167,7 @@ const styles = StyleSheet.create({
   successButtonText: {
     color: "#fff",
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "roboto-bold",
     textAlign: "center",
   },
 });

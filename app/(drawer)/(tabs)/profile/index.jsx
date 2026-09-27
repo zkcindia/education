@@ -20,6 +20,7 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -132,164 +133,146 @@ export default function Index() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color={COLOR.background} />
+        <ActivityIndicator size="large" color="#4F46E5" />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={24} color={COLOR.white} />
-          </TouchableOpacity>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 30 }}
+      >
+        {/* 🔵 GRADIENT HEADER */}
+        <LinearGradient
+          colors={['#4F46E5', '#6D28D9', '#7C3AED']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          {/* Decorative Circles */}
+          <View style={styles.decorCircle1} />
+          <View style={styles.decorCircle2} />
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('screen/myProfileScreen')}
-          >
-            <MaterialCommunityIcons
-              name="square-edit-outline"
-              size={24}
-              color={COLOR.white}
-            />
-          </TouchableOpacity>
-        </View>
+          {/* Top Icons Row */}
+          <View style={styles.headerIcons}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.iconBtn}
+              activeOpacity={0.7}
+            >
+              <Feather name="arrow-left" size={22} color="#fff" />
+            </TouchableOpacity>
 
-        <View style={styles.profileInfo}>
-          <Image
-            source={{
-              uri:
-                profile.image ||
-                'https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg',
-            }}
-            style={styles.profileImage}
-          />
-
-          <View style={styles.profileTextContainer}>
-            <Text style={styles.profileName}>
-              {profile.fullName || 'User'}
-            </Text>
-
-            <Text style={styles.profilePhone}>
-              {profile.phoneNumber || 'No Phone'}
-            </Text>
-
-            <Text style={styles.profileAddress}>
-              {profile.address || 'No Address'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.profileOptionsContainer}>
-          <TouchableOpacity
-            style={styles.profileCard}
-            onPress={() => navigation.navigate('screen/myProfileScreen')}
-          >
-            <View style={styles.optionRow}>
-              <FontAwesome5
-                name="user-alt"
+            <TouchableOpacity
+              onPress={() => navigation.navigate('screen/myProfileScreen')}
+              style={styles.iconBtn}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons
+                name="square-edit-outline"
                 size={22}
-                color={COLOR.background}
+                color="#fff"
               />
-              <Text style={styles.optionText}>My Profile</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Profile Info */}
+          <View style={styles.profileInfo}>
+            {/* Profile Image with Ring */}
+            <View style={styles.profileRing}>
+              <Image
+                source={{
+                  uri:
+                    profile.image ||
+                    'https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg',
+                }}
+                style={styles.profileImage}
+              />
             </View>
 
-            <FontAwesome
-              name="angle-right"
-              size={24}
-              color={COLOR.background}
-            />
-          </TouchableOpacity>
+            <View style={styles.profileTextContainer}>
+              <Text style={styles.profileName}>
+                {profile.fullName || 'User'}
+              </Text>
 
-          <TouchableOpacity
-            style={styles.profileCard}
-            onPress={() => navigation.navigate('refer-earn')}
-          >
-            <View style={styles.optionRow}>
-              <MaterialCommunityIcons
-                name="gift-outline"
-                size={22}
-                color={COLOR.background}
-              />
+              <View style={styles.phoneRow}>
+                <Feather name="phone" size={12} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.profilePhone}>
+                  {profile.phoneNumber || 'No Phone'}
+                </Text>
+              </View>
 
-              <View>
-                <Text style={styles.optionText}>Refer & Earn</Text>
-                <Text style={styles.referSubText}>
-                  Earn ₹50 per referral
+              <View style={styles.phoneRow}>
+                <Feather
+                  name="map-pin"
+                  size={12}
+                  color="rgba(255,255,255,0.85)"
+                />
+                <Text style={styles.profileAddress} numberOfLines={1}>
+                  {profile.address || 'No Address'}
                 </Text>
               </View>
             </View>
+          </View>
+        </LinearGradient>
 
-            <FontAwesome
-              name="angle-right"
-              size={24}
-              color={COLOR.background}
-            />
+        {/* 📋 OPTIONS LIST */}
+        <View style={styles.profileOptionsContainer}>
+          {/* My Profile */}
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={() => navigation.navigate('screen/myProfileScreen')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.optionRow}>
+              <View style={styles.iconCircle}>
+                <FontAwesome5 name="user-alt" size={18} color="#4F46E5" />
+              </View>
+              <Text style={styles.optionText}>My Profile</Text>
+            </View>
+            <Feather name="chevron-right" size={22} color="#4F46E5" />
           </TouchableOpacity>
 
-          {/* <TouchableOpacity style={styles.profileCard}>
+          {/* Refer & Earn */}
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={() => navigation.navigate('refer-earn')}
+            activeOpacity={0.8}
+          >
             <View style={styles.optionRow}>
-              <Entypo name="wallet" size={22} color={COLOR.background} />
-              <Text style={styles.optionText}>My Wallet</Text>
-            </View>
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-          </TouchableOpacity> */}
+              <View style={[styles.iconCircle, { backgroundColor: '#FEF3C7' }]}>
+                <MaterialCommunityIcons
+                  name="gift-outline"
+                  size={18}
+                  color="#F59E0B"
+                />
+              </View>
 
-          {/* <TouchableOpacity style={styles.profileCard}>
+              <View>
+                <Text style={styles.optionText}>Refer & Earnn</Text>
+                <Text style={styles.referSubText}>Earn ₹50 per referral</Text>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={22} color="#4F46E5" />
+          </TouchableOpacity>
+
+          {/* Logout */}
+          <TouchableOpacity
+            style={[styles.profileCard, styles.logoutCard]}
+            onPress={handleLogout}
+            activeOpacity={0.8}
+          >
             <View style={styles.optionRow}>
-              <Entypo name="heart" size={22} color={COLOR.background} />
-              <Text style={styles.optionText}>My Wishlist</Text>
+              <View style={[styles.iconCircle, { backgroundColor: '#FEE2E2' }]}>
+                <MaterialIcons name="logout" size={18} color="#DC2626" />
+              </View>
+              <Text style={[styles.optionText, { color: '#DC2626' }]}>
+                Logout
+              </Text>
             </View>
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-          </TouchableOpacity> */}
-
-          {/* <TouchableOpacity style={styles.profileCard}>
-            <View style={styles.optionRow}>
-              <Entypo name="lock" size={22} color={COLOR.background} />
-              <Text style={styles.optionText}>Change Password</Text>
-            </View>
-
-            <FontAwesome
-              name="angle-right"
-              size={24}
-              color={COLOR.background}
-            />
-          </TouchableOpacity> */}
-
-          {/* <TouchableOpacity style={styles.profileCard}>
-            <View style={styles.optionRow}>
-              <MaterialIcons name="assignment" size={22} color={COLOR.background} />
-              <Text style={styles.optionText}>My Complet Subject</Text>
-            </View>
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-          </TouchableOpacity> */}
-
-          {/* <TouchableOpacity style={styles.profileCard} onPress={handleShare}>
-            <View style={styles.optionRow}>
-              <FontAwesome name="share-alt" size={22} color={COLOR.background} />
-              <Text style={styles.optionText}>Share App</Text>
-            </View>
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-          </TouchableOpacity> */}
-
-          <TouchableOpacity style={styles.profileCard} onPress={handleLogout}>
-            <View style={styles.optionRow}>
-              <MaterialIcons
-                name="logout"
-                size={22}
-                color={COLOR.background}
-              />
-              <Text style={styles.optionText}>Logout</Text>
-            </View>
-
-            <FontAwesome
-              name="angle-right"
-              size={24}
-              color={COLOR.background}
-            />
+            <Feather name="chevron-right" size={22} color="#DC2626" />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -300,97 +283,168 @@ export default function Index() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: '#F8FAFC',
   },
 
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
   },
 
+  // 🔵 HEADER
   header: {
-    backgroundColor: COLOR.background,
-    flex: 0.4,
-    padding: 20,
-    paddingTop: 35,
-    flexDirection: 'column',
-    paddingBottom: 50,
+    paddingTop: 40,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    overflow: 'hidden',
+    position: 'relative',
   },
 
+  // Decorative Circles
+  decorCircle1: {
+    position: 'absolute',
+    top: -60,
+    right: -50,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  decorCircle2: {
+    position: 'absolute',
+    bottom: -70,
+    left: -60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+
+  // Top Icons
   headerIcons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 2,
   },
-
-  profileInfo: {
-    marginHorizontal: 'auto',
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.20)',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
+  // Profile Info
+  profileInfo: {
+    marginTop: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  profileRing: {
+    width: width * 0.30,
+    height: width * 0.30,
+    borderRadius: width * 0.15,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
   profileImage: {
-    width: width * 0.25,
-    height: width * 0.25,
-    borderRadius: 50,
+    width: width * 0.26,
+    height: width * 0.26,
+    borderRadius: width * 0.13,
+    backgroundColor: '#fff',
   },
 
   profileTextContainer: {
-    marginTop: 10,
+    marginTop: 12,
+    alignItems: 'center',
   },
-
   profileName: {
-    color: COLOR.white,
-    fontWeight: 'bold',
-    fontSize: width * 0.045,
+    color: '#fff',
+    fontFamily: 'roboto-bold',
+    fontSize: width * 0.048,
     textAlign: 'center',
   },
-
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 5,
+  },
   profilePhone: {
-    color: COLOR.white,
+    color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
+    fontFamily: 'roboto',
+    fontSize: 12,
   },
-
   profileAddress: {
-    color: COLOR.white,
-    fontWeight: '400',
-    fontSize: width * 0.035,
+    color: 'rgba(255,255,255,0.85)',
+    fontFamily: 'roboto',
+    fontSize: 12,
     textAlign: 'center',
-    marginTop: 3,
+    maxWidth: width * 0.7,
   },
 
-  scrollView: {
-    flex: 0.6,
-  },
-
+  // 📋 OPTIONS
   profileOptionsContainer: {
-    padding: 20,
-    flexDirection: 'column',
+    padding: 16,
+    marginTop: 8,
     gap: 10,
   },
 
   profileCard: {
     flexDirection: 'row',
-    backgroundColor: COLOR.white,
-    padding: width * 0.05,
+    backgroundColor: '#fff',
+    padding: 14,
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderRadius: 5,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  logoutCard: {
+    backgroundColor: '#FEF2F2',
   },
 
   optionRow: {
     flexDirection: 'row',
-    gap: 20,
+    gap: 14,
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
     alignItems: 'center',
   },
 
   optionText: {
-    fontSize: width * 0.04,
-    color: '#999898',
+    fontSize: 14,
+    color: '#1E3A8A',
+    fontFamily: 'roboto-bold',
   },
 
   referSubText: {
-    fontSize: 12,
-    color: '#EA580C',
+    fontSize: 11,
+    color: '#F59E0B',
     marginTop: 2,
+    fontFamily: 'roboto',
   },
 });

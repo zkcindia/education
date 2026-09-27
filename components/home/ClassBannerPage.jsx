@@ -5,6 +5,8 @@ import {
   FlatList,
   Dimensions,
   StyleSheet,
+  Animated,
+  Easing,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -19,12 +21,7 @@ const classBanners = [
     className: "CLASS 6",
     title: "Build Strong Fundamentals",
     subtitle: "CBSE • ICSE • Odisha Board",
-features: [
-  "NCERT Based",
-  "Smart Notes",
-  "Chapter Tests",
-  "Doubt Support"
-],
+    features: ["NCERT Based", "Smart Notes", "Chapter Tests", "Doubt Support"],
     icon: "📚",
     colors: ["#4F46E5", "#7C3AED"],
   },
@@ -33,7 +30,6 @@ features: [
     className: "CLASS 7",
     title: "Learn Beyond Books",
     subtitle: "All subjects in one place",
-    // subjects: ["Maths", "Science", "English", "SST"],
     features: ["MCQ", "Q&A", "Practice"],
     icon: "📝",
     colors: ["#2563EB", "#06B6D4"],
@@ -43,7 +39,6 @@ features: [
     className: "CLASS 8",
     title: "Prepare For Higher Classes",
     subtitle: "Strong concepts for future",
-    // subjects: ["Maths", "Science", "English", "History"],
     features: ["Revision", "Mock Test", "Solved Q&A"],
     icon: "🎯",
     colors: ["#10B981", "#14B8A6"],
@@ -53,7 +48,6 @@ features: [
     className: "CLASS 9",
     title: "Start Board Preparation",
     subtitle: "Concept learning with practice",
-    // subjects: ["Physics", "Chemistry", "Biology", "Maths"],
     features: ["PYQ", "NCERT", "Doubts"],
     icon: "🚀",
     colors: ["#EC4899", "#8B5CF6"],
@@ -63,7 +57,6 @@ features: [
     className: "CLASS 10",
     title: "Ace Your Boards",
     subtitle: "Board exam ready learning",
-    // subjects: ["Science", "Maths", "SST", "English"],
     features: ["Sample Paper", "Full Test", "Board Qs"],
     icon: "🏆",
     colors: ["#F97316", "#EF4444"],
@@ -73,7 +66,34 @@ features: [
 export default function ClassBannerSlider() {
   const flatListRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const floatAnim = useRef(new Animated.Value(0)).current;
 
+  // 🎈 Floating Animation for Icon
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 1600,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  const translateY = floatAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -6],
+  });
+
+  // 🔄 Auto Slider (Same logic)
   useEffect(() => {
     const interval = setInterval(() => {
       const nextIndex =
@@ -104,12 +124,16 @@ export default function ClassBannerSlider() {
           end={{ x: 1, y: 1 }}
           style={styles.banner}
         >
+          {/* 🎨 Decorative Circles */}
           <View style={styles.decorCircleOne} />
           <View style={styles.decorCircleTwo} />
 
+          {/* 🔝 Top Row */}
           <View style={styles.topRow}>
             <View style={styles.leftContent}>
+              {/* 🏷️ Class Pill */}
               <View style={styles.classPill}>
+                <View style={styles.classPillDot} />
                 <Text style={styles.classPillText}>{item.className}</Text>
               </View>
 
@@ -117,31 +141,23 @@ export default function ClassBannerSlider() {
               <Text style={styles.subtitle}>{item.subtitle}</Text>
             </View>
 
-            <View style={styles.iconBox}>
+            {/* 🎯 Icon with Animation */}
+            <Animated.View
+              style={[styles.iconBox, { transform: [{ translateY }] }]}
+            >
+              <View style={styles.iconGlow} />
               <Text style={styles.icon}>{item.icon}</Text>
-            </View>
+            </Animated.View>
           </View>
 
-          {/* <View style={styles.chipWrap}>
-            {item.subjects.map((subject, index) => (
-              <View key={index} style={styles.chip}>
-                <Text style={styles.chipText}>{subject}</Text>
+          {/* ✨ Feature Chips */}
+          <View style={styles.featureContainer}>
+            {item.features.map((feature, index) => (
+              <View key={index} style={styles.featureBox}>
+                <Text style={styles.featureText}>✨ {feature}</Text>
               </View>
             ))}
-          </View> */}
-
-<View style={styles.featureContainer}>
-  {item.features.map((feature,index)=>(
-    <View
-      key={index}
-      style={styles.featureBox}
-    >
-      <Text style={styles.featureText}>
-        ✨ {feature}
-      </Text>
-    </View>
-  ))}
-</View>
+          </View>
         </LinearGradient>
       </View>
     );
@@ -161,6 +177,7 @@ export default function ClassBannerSlider() {
         scrollEventThrottle={16}
       />
 
+      {/* 🔘 Dots Indicator */}
       <View style={styles.dotsContainer}>
         {classBanners.map((_, index) => (
           <View
@@ -186,133 +203,155 @@ const styles = StyleSheet.create({
     paddingHorizontal: HORIZONTAL_PADDING,
   },
 
+  // 🎨 BANNER
   banner: {
     width: CARD_WIDTH,
-    minHeight: 235,
-    borderRadius: 28,
+    minHeight: 240,
+    borderRadius: 26,
     padding: 20,
     overflow: "hidden",
+    position: "relative",
+    // Shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
 
+  // Decorative Circles
   decorCircleOne: {
     position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 100,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    right: -35,
-    top: -35,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    right: -50,
+    top: -50,
   },
-
   decorCircleTwo: {
     position: "absolute",
-    width: 90,
-    height: 90,
-    borderRadius: 80,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    left: -25,
-    bottom: -25,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    left: -35,
+    bottom: -35,
   },
 
+  // Top Row
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    zIndex: 2,
   },
 
   leftContent: {
     width: "68%",
   },
 
+  // 🏷️ Class Pill
   classPill: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.22)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 30,
     alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.30)",
+    gap: 6,
   },
-
+  classPillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#FFFFFF",
+  },
   classPillText: {
     color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 1,
+    fontSize: 11,
+    fontFamily: "roboto-bold",
+    letterSpacing: 1.2,
   },
 
+  // 📝 Title & Subtitle
   title: {
     marginTop: 12,
     color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "900",
-    lineHeight: 28,
+    fontSize: 21,
+    fontFamily: "roboto-bold",
+    lineHeight: 27,
+    textShadowColor: "rgba(0,0,0,0.15)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-
   subtitle: {
     color: "#FFFFFF",
-    fontSize: 14,
-    marginTop: 7,
+    fontSize: 13,
+    marginTop: 6,
     opacity: 0.95,
+    fontFamily: "roboto",
+    lineHeight: 18,
   },
 
+  // 🎯 Icon Box
   iconBox: {
-    width: 88,
-    height: 88,
-    borderRadius: 60,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.25)",
+    position: "relative",
+    zIndex: 2,
   },
-
+  iconGlow: {
+    position: "absolute",
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "rgba(255,255,255,0.15)",
+  },
   icon: {
-    fontSize: 48,
+    fontSize: 44,
+    textShadowColor: "rgba(0,0,0,0.2)",
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
   },
 
-  chipWrap: {
+  // ✨ Feature Container
+  featureContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
     marginTop: 18,
+    zIndex: 2,
   },
-
-  chip: {
-    backgroundColor: "rgba(255,255,255,0.20)",
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
-
-  chipText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  featureRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 16,
-  },
-
-  featureItem: {
-    backgroundColor: "rgba(255,255,255,0.16)",
+  featureBox: {
+    backgroundColor: "rgba(255,255,255,0.18)",
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
   },
-
   featureText: {
     color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontFamily: "roboto-bold",
   },
 
+  // 🔘 Dots
   dotsContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 12,
+    marginTop: 14,
   },
-
   dot: {
     width: 7,
     height: 7,
@@ -320,7 +359,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D1D5DB",
     marginHorizontal: 4,
   },
-
   activeDot: {
     width: 22,
     backgroundColor: "#4F46E5",

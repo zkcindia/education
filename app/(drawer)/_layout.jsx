@@ -67,13 +67,13 @@ export default function Layout() {
           }}
         />
 
-        <Drawer.Screen
+        {/* <Drawer.Screen
           name="top-scorers"          // <-- Folder name
           options={{
             headerShown: false,
             drawerItemStyle: { display: "none" },
           }}
-        />
+        /> */}
 
         <Drawer.Screen
           name="classes"              // <-- Folder name

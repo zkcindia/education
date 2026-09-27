@@ -1,47 +1,44 @@
-// import { View, Text, StyleSheet, Image, TextInput, SafeAreaView, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+// import { View, Text, StyleSheet, Image, SafeAreaView, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 // import React, { useEffect, useState } from 'react';
-// import { Feather, FontAwesome, AntDesign } from '@expo/vector-icons';
+// import { AntDesign } from '@expo/vector-icons';
 // import { COLOR } from './../../../../constants/Colors';
 // import Banner from '../../../../components/home/Banner';
 // import PopularCourse from '../../../../components/home/PopularCourse';
-// import TopMentor from '../../../../components/home/TopMentor';
 // import FeaturedCourse from '../../../../components/home/featuredCourse';
-// import Sloka from '../../../../components/home/Sloka';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 // import { router } from 'expo-router';
-// import { getPointsHistory } from '../../../../constants/api/apiHome';
+// import { fetchUserPoints, fetchUserRank } from '../../../../constants/api/apiHome'; // ✅ CHANGED: fetchUserRank import kiya
 
 // const { width, height } = Dimensions.get('window');
 
 // export default function Index() {
 //   const [userName, setUserName] = useState('');
 //   const [earningPoints, setEarningPoints] = useState(0);
+//   const [userRank, setUserRank] = useState(0);       // ✅ NEW
+//   const [totalUsers, setTotalUsers] = useState(0);   // ✅ NEW
 
-// useEffect(() => {
-//   const fetchUserData = async () => {
-//     try {
-//       const userData = await AsyncStorage.getItem('userData');
+//   useEffect(() => {
+//     const fetchUserData = async () => {
+//       try {
+//         const userData = await AsyncStorage.getItem('userData');
+//         if (userData) {
+//           const parsedData = JSON.parse(userData);
+//           setUserName(parsedData);
+//         }
 
-//       if (userData) {
-//         const parsedData = JSON.parse(userData);
-//         setUserName(parsedData);
+//         const totalPoints = await fetchUserPoints();
+//         setEarningPoints(totalPoints);
+
+//         // ✅ NEW: Fetch user rank from API
+//         const rankData = await fetchUserRank();
+//         setUserRank(rankData.rank);
+//         setTotalUsers(rankData.totalUsers);
+//       } catch (error) {
+//         // Silent error
 //       }
-
-//       const pointsData = await getPointsHistory();
-
-//       const totalPoints = pointsData.reduce((total, item) => {
-//         return total + Number(item.points || 0);
-//       }, 0);
-
-//       setEarningPoints(totalPoints);
-
-//     } catch (error) {
-//       console.error('Error fetching home data:', error);
-//     }
-//   };
-
-//   fetchUserData();
-// }, []);
+//     };
+//     fetchUserData();
+//   }, []);
 
 //   return (
 //     <SafeAreaView style={{ flex: 1 }}>
@@ -49,7 +46,6 @@
 //         contentContainerStyle={{ paddingTop: 40, paddingBottom: 20 }}
 //         showsVerticalScrollIndicator={false}
 //       >
-
 //         {/* Top Header */}
 //         <View style={styles.topContainer}>
 //           <Image
@@ -60,11 +56,7 @@
 //           />
 
 //           <View style={styles.middleContainer}>
-//             <Text 
-//               style={styles.userNameText}
-//               numberOfLines={1}
-//               ellipsizeMode="tail"
-//             >
+//             <Text style={styles.userNameText} numberOfLines={1} ellipsizeMode="tail">
 //               {userName?.name || 'Guest'}
 //             </Text>
 
@@ -72,24 +64,15 @@
 //               style={styles.premiumButton}
 //               onPress={() => router.push('/payment/billing')}
 //             >
-//               <Text style={styles.premiumButtonText}>
-//                 👑 Upgrade Premium
-//               </Text>
+//               <Text style={styles.premiumButtonText}>👑 Upgrade Premium</Text>
 //             </TouchableOpacity>
 //           </View>
 
-//           <View style={styles.rightHeaderContainer}>
-//             {/* <FontAwesome
-//               name="bell"
-//               size={20}
-//               color="black"
-//             /> */}
-//           </View>
+//           <View style={styles.rightHeaderContainer} />
 //         </View>
 
 //         {/* Stats */}
 //         <View style={styles.statsContainer}>
-
 //           <View style={styles.earningContainer}>
 //             <Image
 //               source={{
@@ -97,15 +80,9 @@
 //               }}
 //               style={styles.statImage}
 //             />
-
 //             <View>
-//               <Text style={styles.statText}>
-// {earningPoints}
-//               </Text>
-
-//               <Text style={styles.statLabel}>
-//                 Earning Points
-//               </Text>
+//               <Text style={styles.statText}>{earningPoints}</Text>
+//               <Text style={styles.statLabel}>Earning Points</Text>
 //             </View>
 //           </View>
 
@@ -116,49 +93,38 @@
 //               }}
 //               style={styles.statImage}
 //             />
-
 //             <View>
-//               <Text style={styles.statText}>420</Text>
-
-//               <Text style={styles.statLabel}>
-//                 Ranks
-//               </Text>
+//               {/* ✅ CHANGED: hardcoded 420 → dynamic userRank */}
+//               <Text style={styles.statText}>{userRank}</Text>
+//               <Text style={styles.statLabel}>Ranks</Text>
 //             </View>
 //           </View>
-
 //         </View>
 
 //         {/* Existing Components */}
 //         <Banner />
-//         {/* <Sloka /> */}
 //         <PopularCourse />
-//         {/* <Banner /> */}
 //         <FeaturedCourse />
-
 //       </ScrollView>
 
-//       {/* Floating Action Button - Start Your Test */}
+//       {/* Floating Action Button */}
 //       <TouchableOpacity
 //         style={styles.fab}
-//         // onPress={() => router.push('/classes')}
-//           onPress={() => router.push('/top-scorers')}
+//         onPress={() => router.push('/classes')}
 //         activeOpacity={0.85}
 //       >
 //         <View style={styles.fabLabel}>
 //           <Text style={styles.fabText}>Start Your Test</Text>
 //         </View>
-
 //         <View style={styles.fabCircle}>
 //           <AntDesign name="plus" size={28} color="#FFF" />
 //         </View>
 //       </TouchableOpacity>
-
 //     </SafeAreaView>
 //   );
 // }
 
 // const styles = StyleSheet.create({
-
 //   topContainer: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
@@ -166,26 +132,22 @@
 //     marginBottom: 3,
 //     marginTop: 10,
 //   },
-
 //   profileImage: {
 //     width: width * 0.15,
 //     height: width * 0.15,
 //     borderRadius: 50,
 //     backgroundColor: COLOR.background,
 //   },
-
 //   middleContainer: {
 //     flex: 1,
 //     marginLeft: width * 0.03,
 //     justifyContent: 'center',
 //   },
-
 //   userNameText: {
 //     fontFamily: 'roboto-bold',
 //     fontSize: width * 0.045,
 //     color: '#000',
 //   },
-
 //   premiumButton: {
 //     backgroundColor: '#7C3AED',
 //     paddingHorizontal: 14,
@@ -193,30 +155,18 @@
 //     borderRadius: 10,
 //     alignSelf: 'flex-start',
 //     marginTop: 8,
-//     shadowColor: '#7C3AED',
-//     shadowOffset: {
-//       width: 0,
-//       height: 2,
-//     },
-//     shadowOpacity: 0.25,
-//     shadowRadius: 4,
-//     elevation: 4,
 //   },
-
 //   premiumButtonText: {
 //     color: 'white',
 //     fontSize: 12,
 //     fontFamily: 'roboto-bold',
-//     letterSpacing: 0.3,
 //   },
-
 //   rightHeaderContainer: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
 //     gap: 10,
 //     marginLeft: 8,
 //   },
-
 //   statsContainer: {
 //     flexDirection: 'row',
 //     justifyContent: 'space-between',
@@ -230,31 +180,25 @@
 //     shadowRadius: 10,
 //     shadowOpacity: 0.2,
 //   },
-
 //   earningContainer: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
 //     width: width * 0.4,
 //   },
-
 //   statImage: {
 //     width: width * 0.15,
 //     height: height * 0.1,
 //     resizeMode: 'contain',
 //   },
-
 //   statText: {
 //     fontFamily: 'roboto-bold',
 //     fontSize: width * 0.04,
 //   },
-
 //   statLabel: {
 //     fontFamily: 'roboto',
 //     fontSize: width * 0.035,
 //     color: 'grey',
 //   },
-
-//   // Floating Action Button Styles - Start Your Test
 //   fab: {
 //     position: 'absolute',
 //     bottom: 5,
@@ -262,20 +206,13 @@
 //     flexDirection: 'row',
 //     alignItems: 'center',
 //   },
-
 //   fabLabel: {
 //     backgroundColor: '#7C3AED',
 //     paddingHorizontal: 14,
 //     paddingVertical: 8,
 //     borderRadius: 18,
 //     marginRight: 4,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.15,
-//     shadowRadius: 4,
-//     elevation: 4,
 //   },
-
 //   fabCircle: {
 //     width: 56,
 //     height: 56,
@@ -283,98 +220,46 @@
 //     backgroundColor: '#7C3AED',
 //     justifyContent: 'center',
 //     alignItems: 'center',
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 3 },
-//     shadowOpacity: 0.25,
-//     shadowRadius: 5,
-//     elevation: 6,
 //   },
-
 //   fabText: {
 //     fontSize: 13,
 //     color: "#FFFFFF",
 //     fontFamily: 'roboto-bold',
 //   },
-
-//   /* Payment Card Styles */
-
-//   paymentContainer: {
-//     paddingHorizontal: 20,
-//     marginTop: 20,
-//     marginBottom: 30,
-//   },
-
-//   paymentTitle: {
-//     fontSize: 22,
-//     fontFamily: 'roboto-bold',
-//     marginBottom: 15,
-//   },
-
-//   paymentCard: {
-//     backgroundColor: '#7C3AED',
-//     padding: 20,
-//     borderRadius: 25,
-//   },
-
-//   courseTitle: {
-//     color: 'white',
-//     fontSize: 24,
-//     fontFamily: 'roboto-bold',
-//   },
-
-//   courseSubtitle: {
-//     color: '#E9D5FF',
-//     marginTop: 5,
-//     fontSize: 14,
-//     fontFamily: 'roboto',
-//   },
-
-//   paymentImage: {
-//     width: '100%',
-//     height: 180,
-//     borderRadius: 20,
-//     marginTop: 20,
-//   },
-
-//   priceText: {
-//     color: 'white',
-//     fontSize: 35,
-//     fontFamily: 'roboto-bold',
-//     marginTop: 20,
-//   },
-
-//   buyButton: {
-//     backgroundColor: 'white',
-//     paddingVertical: 14,
-//     borderRadius: 15,
-//     marginTop: 20,
-//   },
-
-//   buyButtonText: {
-//     textAlign: 'center',
-//     color: '#7C3AED',
-//     fontSize: 18,
-//     fontFamily: 'roboto-bold',
-//   },
-
 // });
 
-import { View, Text, StyleSheet, Image, SafeAreaView, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  Dimensions,
+  TouchableOpacity,
+} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { AntDesign } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLOR } from './../../../../constants/Colors';
 import Banner from '../../../../components/home/Banner';
 import PopularCourse from '../../../../components/home/PopularCourse';
 import FeaturedCourse from '../../../../components/home/featuredCourse';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { fetchUserPoints } from '../../../../constants/api/apiHome';
+import {
+  fetchUserPoints,
+  fetchUserRank,
+} from '../../../../constants/api/apiHome';
 
 const { width, height } = Dimensions.get('window');
 
 export default function Index() {
   const [userName, setUserName] = useState('');
   const [earningPoints, setEarningPoints] = useState(0);
+  const [userRank, setUserRank] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -387,6 +272,10 @@ export default function Index() {
 
         const totalPoints = await fetchUserPoints();
         setEarningPoints(totalPoints);
+
+        const rankData = await fetchUserRank();
+        setUserRank(rankData.rank);
+        setTotalUsers(rankData.totalUsers);
       } catch (error) {
         // Silent error
       }
@@ -395,39 +284,48 @@ export default function Index() {
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: 40, paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top Header */}
-        <View style={styles.topContainer}>
-          <Image
-            source={{
-              uri: 'https://www.icon0.com/free/static2/preview2/stock-photo-little-boy-faces-children-avatar-people-icon-character-cartoon-32990.jpg',
-            }}
-            style={styles.profileImage}
-          />
+        {/* 🔵 TOP HEADER (Simple Gradient) */}
+        <LinearGradient
+          colors={['#4F46E5', '#7C3AED']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.topContainer}>
+            {/* Profile Image */}
+            <Image
+              source={{
+                uri: 'https://www.icon0.com/free/static2/preview2/stock-photo-little-boy-faces-children-avatar-people-icon-character-cartoon-32990.jpg',
+              }}
+              style={styles.profileImage}
+            />
 
-          <View style={styles.middleContainer}>
-            <Text style={styles.userNameText} numberOfLines={1} ellipsizeMode="tail">
-              {userName?.name || 'Guest'}
-            </Text>
+            {/* Greeting + Name + Premium */}
+            <View style={styles.middleContainer}>
+              <Text style={styles.userNameText} numberOfLines={1}>
+                {userName?.name || 'Guest'}
+              </Text>
 
-            <TouchableOpacity
-              style={styles.premiumButton}
-              onPress={() => router.push('/payment/billing')}
-            >
-              <Text style={styles.premiumButtonText}>👑 Upgrade Premium</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.premiumButton}
+                onPress={() => router.push('/payment/billing')}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.premiumButtonText}>👑 Upgrade Premium</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+        </LinearGradient>
 
-          <View style={styles.rightHeaderContainer} />
-        </View>
-
-        {/* Stats */}
+        {/* 📊 STATS (Simple White Cards) */}
         <View style={styles.statsContainer}>
-          <View style={styles.earningContainer}>
+          {/* Points */}
+          <View style={styles.statCard}>
             <Image
               source={{
                 uri: 'https://img.freepik.com/premium-vector/bitcoin-investing-flat-vector-illustration-banner_128772-693.jpg',
@@ -440,7 +338,8 @@ export default function Index() {
             </View>
           </View>
 
-          <View style={styles.earningContainer}>
+          {/* Rank */}
+          <View style={styles.statCard}>
             <Image
               source={{
                 uri: 'https://img.freepik.com/premium-vector/achievement-trophy-flat-vector-illustration-banner_128772-725.jpg',
@@ -448,29 +347,29 @@ export default function Index() {
               style={styles.statImage}
             />
             <View>
-              <Text style={styles.statText}>420</Text>
+              <Text style={styles.statText}>{userRank}</Text>
               <Text style={styles.statLabel}>Ranks</Text>
             </View>
           </View>
         </View>
 
-        {/* Existing Components */}
+        {/* 📦 COMPONENTS */}
         <Banner />
         <PopularCourse />
         <FeaturedCourse />
       </ScrollView>
 
-      {/* Floating Action Button */}
+      {/* 🔘 FAB (Simple) */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/top-scorers')}
+        onPress={() => router.push('/classes')}
         activeOpacity={0.85}
       >
         <View style={styles.fabLabel}>
           <Text style={styles.fabText}>Start Your Test</Text>
         </View>
         <View style={styles.fabCircle}>
-          <AntDesign name="plus" size={28} color="#FFF" />
+          <AntDesign name="plus" size={26} color="#7C3AED" />
         </View>
       </TouchableOpacity>
     </SafeAreaView>
@@ -478,105 +377,124 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
+  // 🔵 HEADER
+  headerGradient: {
+    paddingTop: height * 0.05,
+    paddingBottom: 60,
+    paddingHorizontal: width * 0.05,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
   topContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: width * 0.05,
-    marginBottom: 3,
-    marginTop: 10,
   },
   profileImage: {
     width: width * 0.15,
     height: width * 0.15,
-    borderRadius: 50,
-    backgroundColor: COLOR.background,
+    borderRadius: width * 0.075,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: '#fff',
   },
   middleContainer: {
     flex: 1,
-    marginLeft: width * 0.03,
+    marginLeft: width * 0.04,
     justifyContent: 'center',
   },
   userNameText: {
     fontFamily: 'roboto-bold',
-    fontSize: width * 0.045,
-    color: '#000',
+    fontSize: width * 0.048,
+    color: '#fff',
   },
   premiumButton: {
-    backgroundColor: '#7C3AED',
-    paddingHorizontal: 14,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 10,
+    borderRadius: 20,
     alignSelf: 'flex-start',
     marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   premiumButtonText: {
-    color: 'white',
-    fontSize: 12,
+    color: '#fff',
+    fontSize: 11,
     fontFamily: 'roboto-bold',
   },
-  rightHeaderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginLeft: 8,
-  },
+
+  // 📊 STATS (Simple)
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginHorizontal: width * 0.05,
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 10,
-    shadowOpacity: 0.2,
+    marginTop: -40,
+    gap: 12,
   },
-  earningContainer: {
+  statCard: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    width: width * 0.4,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   statImage: {
-    width: width * 0.15,
-    height: height * 0.1,
+    width: 40,
+    height: 40,
     resizeMode: 'contain',
+    marginRight: 8,
   },
   statText: {
     fontFamily: 'roboto-bold',
-    fontSize: width * 0.04,
+    fontSize: width * 0.045,
+    color: '#1E3A8A',
   },
   statLabel: {
     fontFamily: 'roboto',
-    fontSize: width * 0.035,
-    color: 'grey',
+    fontSize: width * 0.028,
+    color: '#6B7280',
+    marginTop: 1,
   },
+
+  // 🔘 FAB (Simple)
   fab: {
     position: 'absolute',
-    bottom: 5,
-    right: 8,
+    bottom: 20,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
   },
   fabLabel: {
     backgroundColor: '#7C3AED',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 18,
-    marginRight: 4,
-  },
-  fabCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 20,
+    marginRight: 6,
   },
   fabText: {
-    fontSize: 13,
-    color: "#FFFFFF",
+    fontSize: 12,
+    color: '#FFFFFF',
     fontFamily: 'roboto-bold',
+  },
+  fabCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#7C3AED',
   },
 });
