@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Share,
+  Dimensions,
 } from 'react-native';
 
 import React, { useEffect, useState } from 'react';
@@ -18,12 +19,14 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 import { COLOR } from '../../../constants/Colors';
 import { getWalletBalance } from '../../../constants/api/apiPayment';
 
+const { width } = Dimensions.get('window');
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function Index() {
@@ -96,104 +99,149 @@ export default function Index() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loader}>
-        <ActivityIndicator size="large" color={COLOR.background} />
+        <ActivityIndicator size="large" color="#4F46E5" />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={24} color={COLOR.white} />
-          </TouchableOpacity>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 30 }}
+      >
+        {/* 🔵 GRADIENT HEADER */}
+        <LinearGradient
+          colors={['#4F46E5', '#6D28D9', '#7C3AED']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          {/* Decorative Circles */}
+          <View style={styles.decorCircle1} />
+          <View style={styles.decorCircle2} />
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('screen/myProfileScreen')}
-          >
-            <MaterialCommunityIcons
-              name="square-edit-outline"
-              size={24}
-              color={COLOR.white}
-            />
-          </TouchableOpacity>
-        </View>
+          {/* Top Row */}
+          <View style={styles.headerTop}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.iconBtn}
+              activeOpacity={0.7}
+            >
+              <Feather name="arrow-left" size={22} color="#fff" />
+            </TouchableOpacity>
 
-        <View style={styles.profileBox}>
-          <Image source={{ uri: profileImage }} style={styles.profileImage} />
-
-          <Text style={styles.name}>
-            {teacher?.name || teacher?.full_name || 'Teacher Name'}
-          </Text>
-
-          <Text style={styles.phone}>
-            {teacher?.mobile || 'No Phone'}
-          </Text>
-
-          <Text style={styles.address}>
-            {teacher?.address || 'No Address'}
-          </Text>
-
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              👨‍🏫 {teacher?.role || 'Teacher'}
-            </Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('screen/myProfileScreen')}
+              style={styles.iconBtn}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons
+                name="square-edit-outline"
+                size={22}
+                color="#fff"
+              />
+            </TouchableOpacity>
           </View>
-        </View>
-      </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Profile Box */}
+          <View style={styles.profileBox}>
+            {/* Profile Image with Ring */}
+            <View style={styles.profileRing}>
+              <Image
+                source={{ uri: profileImage }}
+                style={styles.profileImage}
+              />
+            </View>
+
+            <Text style={styles.name}>
+              {teacher?.name || teacher?.full_name || 'Teacher Name'}
+            </Text>
+
+            <View style={styles.infoRow}>
+              <Feather name="phone" size={12} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.phone}>
+                {teacher?.mobile || 'No Phone'}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Feather
+                name="map-pin"
+                size={12}
+                color="rgba(255,255,255,0.85)"
+              />
+              <Text style={styles.address} numberOfLines={1}>
+                {teacher?.address || 'No Address'}
+              </Text>
+            </View>
+
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                👨‍🏫 {teacher?.role || 'Teacher'}
+              </Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* 📋 CARDS */}
         <View style={styles.cardContainer}>
+          {/* My Profile */}
           <TouchableOpacity
             style={styles.profileCard}
             onPress={() => navigation.navigate('screen/myProfileScreen')}
+            activeOpacity={0.8}
           >
             <View style={styles.row}>
-              <FontAwesome5
-                name="user-alt"
-                size={22}
-                color={COLOR.background}
-              />
+              <View style={styles.iconCircle}>
+                <FontAwesome5 name="user-alt" size={18} color="#4F46E5" />
+              </View>
               <Text style={styles.cardText}>My Profile</Text>
             </View>
-
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
+            <Feather name="chevron-right" size={22} color="#4F46E5" />
           </TouchableOpacity>
 
+          {/* Refer & Earn */}
           <TouchableOpacity
             style={styles.profileCard}
             onPress={() => navigation.navigate('refer-earn')}
+            activeOpacity={0.8}
           >
             <View style={styles.row}>
-              <MaterialCommunityIcons
-                name="gift-outline"
-                size={22}
-                color={COLOR.background}
-              />
-
+              <View style={[styles.iconCircle, { backgroundColor: '#FEF3C7' }]}>
+                <MaterialCommunityIcons
+                  name="gift-outline"
+                  size={18}
+                  color="#F59E0B"
+                />
+              </View>
               <View>
                 <Text style={styles.cardText}>Refer & Earn</Text>
                 <Text style={styles.subText}>Earn ₹500 per referral</Text>
               </View>
             </View>
-
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
+            <Feather name="chevron-right" size={22} color="#4F46E5" />
           </TouchableOpacity>
 
-<TouchableOpacity 
-  style={styles.profileCard}
-  onPress={() => navigation.navigate('screen/Wallet')}  // ← YEH ADD KARO
->
-  <View style={styles.row}>
-    <Entypo name="wallet" size={22} color={COLOR.background} />
-    <View>
-      <Text style={styles.cardText}>My Wallet</Text>
-      <Text style={styles.walletText}>Balance: ₹{walletBalance}</Text>
-    </View>
-  </View>
-  <FontAwesome name="angle-right" size={24} color={COLOR.background} />
-</TouchableOpacity>
+          {/* My Wallet */}
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={() => navigation.navigate('screen/Wallet')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.row}>
+              <View style={[styles.iconCircle, { backgroundColor: '#DCFCE7' }]}>
+                <Entypo name="wallet" size={18} color="#10B981" />
+              </View>
+              <View>
+                <Text style={styles.cardText}>My Wallet</Text>
+                <Text style={styles.walletText}>
+                  Balance: ₹{walletBalance}
+                </Text>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={22} color="#4F46E5" />
+          </TouchableOpacity>
 
           {/* <TouchableOpacity style={styles.profileCard}>
             <View style={styles.row}>
@@ -204,22 +252,36 @@ export default function Index() {
             <FontAwesome name="angle-right" size={24} color={COLOR.background} />
           </TouchableOpacity> */}
 
-          <TouchableOpacity style={styles.profileCard} onPress={handleShare}>
+          {/* Share App */}
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={handleShare}
+            activeOpacity={0.8}
+          >
             <View style={styles.row}>
-              <FontAwesome name="share-alt" size={22} color={COLOR.background} />
+              <View style={[styles.iconCircle, { backgroundColor: '#DBEAFE' }]}>
+                <FontAwesome name="share-alt" size={18} color="#3B82F6" />
+              </View>
               <Text style={styles.cardText}>Share App</Text>
             </View>
-
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
+            <Feather name="chevron-right" size={22} color="#4F46E5" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.profileCard} onPress={handleLogout}>
+          {/* Logout */}
+          <TouchableOpacity
+            style={[styles.profileCard, styles.logoutCard]}
+            onPress={handleLogout}
+            activeOpacity={0.8}
+          >
             <View style={styles.row}>
-              <MaterialIcons name="logout" size={22} color={COLOR.background} />
-              <Text style={styles.cardText}>Logout</Text>
+              <View style={[styles.iconCircle, { backgroundColor: '#FEE2E2' }]}>
+                <MaterialIcons name="logout" size={18} color="#DC2626" />
+              </View>
+              <Text style={[styles.cardText, { color: '#DC2626' }]}>
+                Logout
+              </Text>
             </View>
-
-            <FontAwesome name="angle-right" size={24} color={COLOR.background} />
+            <Feather name="chevron-right" size={22} color="#DC2626" />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -237,109 +299,184 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
   },
 
+  // 🔵 HEADER
   header: {
-    backgroundColor: COLOR.background,
-    padding: 20,
-    paddingTop: 50,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingTop: 45,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+
+  // Decorative Circles
+  decorCircle1: {
+    position: 'absolute',
+    top: -70,
+    right: -50,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  decorCircle2: {
+    position: 'absolute',
+    bottom: -80,
+    left: -60,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
 
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   profileBox: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 18,
+    zIndex: 2,
   },
 
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  // Profile Image Ring
+  profileRing: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  profileImage: {
+    width: 98,
+    height: 98,
+    borderRadius: 49,
+    backgroundColor: '#fff',
   },
 
   name: {
-    color: COLOR.white,
-    fontWeight: 'bold',
-    fontSize: 20,
+    color: '#fff',
+    fontFamily: 'roboto-bold',
+    fontSize: 19,
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 12,
+  },
+
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 5,
   },
 
   phone: {
-    color: COLOR.white,
+    color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
-    marginTop: 4,
+    fontFamily: 'roboto',
+    fontSize: 12,
   },
 
   address: {
-    color: COLOR.white,
+    color: 'rgba(255,255,255,0.85)',
     textAlign: 'center',
-    marginTop: 4,
-    fontSize: 13,
+    fontFamily: 'roboto',
+    fontSize: 12,
+    maxWidth: width * 0.7,
   },
 
   badge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
     borderRadius: 20,
-    marginTop: 8,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
 
   badgeText: {
-    color: COLOR.white,
-    fontSize: 12,
-    fontWeight: '500',
+    color: '#fff',
+    fontSize: 11,
+    fontFamily: 'roboto-bold',
   },
 
-  scrollView: {
-    flex: 1,
-  },
-
+  // 📋 Cards
   cardContainer: {
-    padding: 20,
-    gap: 12,
+    padding: 16,
+    gap: 10,
+    marginTop: 8,
   },
 
   profileCard: {
     flexDirection: 'row',
-    backgroundColor: COLOR.white,
-    padding: 16,
+    backgroundColor: '#fff',
+    padding: 14,
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
+  },
+
+  logoutCard: {
+    backgroundColor: '#FEF2F2',
   },
 
   row: {
     flexDirection: 'row',
-    gap: 20,
+    gap: 14,
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
     alignItems: 'center',
   },
 
   cardText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#1E3A8A',
+    fontFamily: 'roboto-bold',
   },
 
   subText: {
-    fontSize: 12,
-    color: '#EA580C',
+    fontSize: 11,
+    color: '#F59E0B',
     marginTop: 2,
+    fontFamily: 'roboto',
   },
 
   walletText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#10B981',
     marginTop: 2,
+    fontFamily: 'roboto-bold',
   },
 });

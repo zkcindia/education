@@ -1,20 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, TextInput, Text, FlatList,
-  TouchableOpacity, StyleSheet, Alert, ScrollView, ActivityIndicator, Platform
+  View,
+  TextInput,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+  Platform,
+  Dimensions,
 } from 'react-native';
-import { COLOR } from '../../constants/Colors';
 import Modal from 'react-native-modal';
 import RNPickerSelect from 'react-native-picker-select';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Feather, AntDesign } from '@expo/vector-icons';
 import { allClassFetch, fetchSubject } from '../../constants/api/apiHome';
-import { uploadQuestions, uploadBulkQuestions, getBoards, getClassesByBoard, getSubjects } from '../../constants/api/apiTeacher';
+import {
+  uploadQuestions,
+  uploadBulkQuestions,
+  getBoards,
+  getClassesByBoard,
+  getSubjects,
+} from '../../constants/api/apiTeacher';
 import { useToast } from 'react-native-toast-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as XLSX from 'xlsx';
 import * as FileSystem from 'expo-file-system';
-import { AntDesign } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 const QuestionUpload = () => {
   const toast = useToast();
@@ -29,7 +46,7 @@ const QuestionUpload = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileUploadProgress, setFileUploadProgress] = useState(0);
-  
+
   const [boards, setBoards] = useState([]);
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(false);
@@ -131,10 +148,10 @@ const QuestionUpload = () => {
       setSubjectData([]);
       return;
     }
-    
-    const board = boards.find(b => String(b.id) === String(boardId));
+
+    const board = boards.find((b) => String(b.id) === String(boardId));
     console.log('📚 Board Found:', board);
-    
+
     if (board) {
       setSelectedBoard(board);
       setSelectedClass(null);
@@ -153,10 +170,10 @@ const QuestionUpload = () => {
       setSubjectData([]);
       return;
     }
-    
-    const classItem = classData.find(c => String(c.id) === String(classId));
+
+    const classItem = classData.find((c) => String(c.id) === String(classId));
     console.log('📖 Class Found:', classItem);
-    
+
     if (classItem) {
       setSelectedClass(classItem);
       setSelectedSubject(null);
@@ -177,7 +194,7 @@ const QuestionUpload = () => {
       }));
       return;
     }
-    
+
     setSelectedSubject(subjectId);
     setQuestionData((prev) => ({
       ...prev,
@@ -216,7 +233,7 @@ const QuestionUpload = () => {
         placement: 'top',
       });
     } else {
-      Alert.alert("All fields are required");
+      Alert.alert('All fields are required');
     }
   };
 
@@ -231,7 +248,7 @@ const QuestionUpload = () => {
         type: [
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/vnd.ms-excel',
-          'text/csv'
+          'text/csv',
         ],
         copyToCacheDirectory: true,
       });
@@ -243,16 +260,15 @@ const QuestionUpload = () => {
 
       const file = result.assets[0];
       setSelectedFile(file);
-      
-      Alert.alert(
-        'Confirm Upload',
-        `Upload file: ${file.name}?`,
-        [
-          { text: 'Cancel', style: 'cancel', onPress: () => setSelectedFile(null) },
-          { text: 'Upload', onPress: () => uploadFileToServer(file) }
-        ]
-      );
-      
+
+      Alert.alert('Confirm Upload', `Upload file: ${file.name}?`, [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => setSelectedFile(null),
+        },
+        { text: 'Upload', onPress: () => uploadFileToServer(file) },
+      ]);
     } catch (error) {
       Alert.alert('Error', 'Failed to pick file');
       console.log('File picker error:', error);
@@ -262,14 +278,14 @@ const QuestionUpload = () => {
   const uploadFileToServer = async (file) => {
     setIsLoading(true);
     setFileUploadProgress(0);
-    
+
     try {
       const userData = await AsyncStorage.getItem('userData');
       const parsedData = JSON.parse(userData);
       const teacherId = parsedData.id;
 
       const progressInterval = setInterval(() => {
-        setFileUploadProgress(prev => {
+        setFileUploadProgress((prev) => {
           if (prev >= 90) {
             clearInterval(progressInterval);
             return 90;
@@ -281,7 +297,7 @@ const QuestionUpload = () => {
       const response = await uploadBulkQuestions({
         id: teacherId,
         subject: selectedSubject,
-        file: file
+        file: file,
       });
 
       clearInterval(progressInterval);
@@ -296,14 +312,13 @@ const QuestionUpload = () => {
           animationType: 'zoom-in',
           placement: 'top',
         });
-        
+
         setTimeout(() => {
           navigation.navigate('question');
         }, 1500);
       } else {
         throw new Error(response.data?.error || 'Upload failed');
       }
-      
     } catch (error) {
       console.error('Upload error:', error);
       toast.show(error.message || 'Failed to upload questions', {
@@ -330,7 +345,7 @@ const QuestionUpload = () => {
         type: [
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'application/vnd.ms-excel',
-          'text/csv'
+          'text/csv',
         ],
         copyToCacheDirectory: true,
       });
@@ -345,27 +360,29 @@ const QuestionUpload = () => {
       const fileContent = await FileSystem.readAsStringAsync(fileUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      
+
       const workbook = XLSX.read(fileContent, { type: 'base64' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-      
+
       if (jsonData.length === 0) {
         Alert.alert('Error', 'The file is empty or invalid');
         return;
       }
-      
+
       Alert.alert(
         'Preview Questions',
         `${jsonData.length} questions found in the file. Upload now?`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Upload', onPress: () => uploadFileToServer(file) }
+          { text: 'Upload', onPress: () => uploadFileToServer(file) },
         ]
       );
-      
     } catch (error) {
-      Alert.alert('Error', 'Failed to parse the Excel file. Please check the format.');
+      Alert.alert(
+        'Error',
+        'Failed to parse the Excel file. Please check the format.'
+      );
       console.log('Parse error:', error);
     }
   };
@@ -374,41 +391,41 @@ const QuestionUpload = () => {
     try {
       const templateData = [
         {
-          'question': 'What is the capital of France?',
-          'option1': 'London',
-          'option2': 'Paris',
-          'option3': 'Berlin',
-          'option4': 'Madrid',
-          'correct_answer': 'Paris'
+          question: 'What is the capital of France?',
+          option1: 'London',
+          option2: 'Paris',
+          option3: 'Berlin',
+          option4: 'Madrid',
+          correct_answer: 'Paris',
         },
         {
-          'question': 'What is 2 + 2?',
-          'option1': '3',
-          'option2': '4',
-          'option3': '5',
-          'option4': '6',
-          'correct_answer': '4'
+          question: 'What is 2 + 2?',
+          option1: '3',
+          option2: '4',
+          option3: '5',
+          option4: '6',
+          correct_answer: '4',
         },
         {
-          'question': 'Which planet is known as the Red Planet?',
-          'option1': 'Venus',
-          'option2': 'Mars',
-          'option3': 'Jupiter',
-          'option4': 'Saturn',
-          'correct_answer': 'Mars'
-        }
+          question: 'Which planet is known as the Red Planet?',
+          option1: 'Venus',
+          option2: 'Mars',
+          option3: 'Jupiter',
+          option4: 'Saturn',
+          correct_answer: 'Mars',
+        },
       ];
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(templateData);
       XLSX.utils.book_append_sheet(wb, ws, 'Questions');
-      
+
       const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
       const fileUri = FileSystem.documentDirectory + 'question_template.xlsx';
       await FileSystem.writeAsStringAsync(fileUri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      
+
       if (Platform.OS === 'web') {
         const byteCharacters = atob(wbout);
         const byteNumbers = new Array(byteCharacters.length);
@@ -416,8 +433,10 @@ const QuestionUpload = () => {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        
+        const blob = new Blob([byteArray], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -427,13 +446,9 @@ const QuestionUpload = () => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
-        Alert.alert(
-          'Template Downloaded',
-          `Template saved to: ${fileUri}`,
-          [
-            { text: 'OK', style: 'default' }
-          ]
-        );
+        Alert.alert('Template Downloaded', `Template saved to: ${fileUri}`, [
+          { text: 'OK', style: 'default' },
+        ]);
       }
 
       toast.show('Template downloaded successfully', {
@@ -442,7 +457,6 @@ const QuestionUpload = () => {
         animationType: 'zoom-in',
         placement: 'top',
       });
-      
     } catch (error) {
       console.error('Template download error:', error);
       toast.show('Failed to download template', {
@@ -456,7 +470,10 @@ const QuestionUpload = () => {
 
   const handleSubmit = async () => {
     if (questions.length === 0) {
-      Alert.alert('No Questions', 'Please add at least one question before submitting');
+      Alert.alert(
+        'No Questions',
+        'Please add at least one question before submitting'
+      );
       return;
     }
 
@@ -501,21 +518,31 @@ const QuestionUpload = () => {
   };
 
   const handleConfirmSelection = () => {
-    console.log('✅ Confirm clicked - Board:', selectedBoard, 'Class:', selectedClass, 'Subject:', selectedSubject);
-    
+    console.log(
+      '✅ Confirm clicked - Board:',
+      selectedBoard,
+      'Class:',
+      selectedClass,
+      'Subject:',
+      selectedSubject
+    );
+
     if (selectedBoard && selectedClass && selectedSubject) {
       setQuestionData((prev) => ({
         ...prev,
         subject: selectedSubject,
       }));
       setModalVisible(false);
-      
-      toast.show(`Selected: ${selectedBoard.board_name} → ${selectedClass.name} → ${selectedSubject.name}`, {
-        type: 'success',
-        duration: 1500,
-        animationType: 'zoom-in',
-        placement: 'top',
-      });
+
+      toast.show(
+        `Selected: ${selectedBoard.board_name} → ${selectedClass.name} → ${selectedSubject.name}`,
+        {
+          type: 'success',
+          duration: 1500,
+          animationType: 'zoom-in',
+          placement: 'top',
+        }
+      );
     } else {
       Alert.alert('Please select Board, Class and Subject');
     }
@@ -540,175 +567,287 @@ const QuestionUpload = () => {
   const isSubjectSelected = selectedSubject !== null;
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>Upload Questions</Text>
+    <View style={styles.container}>
+      {/* 🔵 GRADIENT HEADER */}
+      <LinearGradient
+        colors={['#4F46E5', '#6D28D9', '#7C3AED']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.decorCircle1} />
+        <View style={styles.decorCircle2} />
 
-      {/* ✅ Selection Status - Jab subject select ho tabhi dikhe */}
-      {isSubjectSelected && (
-        <View style={styles.selectionStatus}>
-          <Text style={styles.selectionText}>
-            📚 {selectedBoard?.board_name || 'Board'} → 📖 {selectedClass?.name || 'Class'} → 📝 {subjectData.find(s => String(s.id) === String(selectedSubject))?.name || 'Subject'}
-          </Text>
-          <TouchableOpacity onPress={openBottomSheet} style={styles.changeButton}>
-            <Text style={styles.changeButtonText}>Change</Text>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backBtn}
+            activeOpacity={0.7}
+          >
+            <Feather name="arrow-left" size={22} color="#fff" />
           </TouchableOpacity>
-        </View>
-      )}
 
-      {/* ✅ ONLY SHOW FORM WHEN SUBJECT IS SELECTED */}
-      {isSubjectSelected ? (
-        <>
-          <View style={styles.bulkSection}>
-            <TouchableOpacity 
-              style={styles.bulkButton} 
-              onPress={handleBulkUpload}
-              disabled={isLoading}
+          <Text style={styles.headerTitle}>Upload Questions</Text>
+
+          <View style={styles.headerIconBox}>
+            <View style={styles.headerGlowCircle} />
+            <Text style={styles.headerIconEmoji}>📝</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <ScrollView
+        style={styles.scrollBody}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* ✅ Selection Status - Jab subject select ho tabhi dikhe */}
+        {isSubjectSelected && (
+          <View style={styles.selectionStatus}>
+            <View style={styles.selectionLeft}>
+              <View style={styles.selectionIconBox}>
+                <Feather name="check-circle" size={16} color="#10B981" />
+              </View>
+              <Text style={styles.selectionText} numberOfLines={2}>
+                {selectedBoard?.board_name || 'Board'} → {selectedClass?.name || 'Class'} →{' '}
+                {subjectData.find((s) => String(s.id) === String(selectedSubject))
+                  ?.name || 'Subject'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={openBottomSheet}
+              style={styles.changeButton}
+              activeOpacity={0.8}
             >
-              <Text style={styles.bulkButtonText}>📤 Upload Excel File</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.templateButton} 
-              onPress={downloadTemplate}
-              disabled={isLoading}
-            >
-              <Text style={styles.templateButtonText}>📄 Download Template</Text>
+              <Text style={styles.changeButtonText}>Change</Text>
             </TouchableOpacity>
           </View>
+        )}
 
-          <TouchableOpacity 
-            style={styles.previewButton} 
-            onPress={handlePreviewAndUpload}
-            disabled={isLoading}
-          >
-            <Text style={styles.previewButtonText}>👁️ Preview Excel Before Upload</Text>
-          </TouchableOpacity>
+        {/* ✅ ONLY SHOW FORM WHEN SUBJECT IS SELECTED */}
+        {isSubjectSelected ? (
+          <>
+            <View style={styles.bulkSection}>
+              <TouchableOpacity
+                style={styles.bulkButton}
+                onPress={handleBulkUpload}
+                disabled={isLoading}
+                activeOpacity={0.85}
+              >
+                <Feather name="upload" size={16} color="#fff" />
+                <Text style={styles.bulkButtonText}>Upload Excel</Text>
+              </TouchableOpacity>
 
-          {isLoading && (
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>Uploading: {fileUploadProgress}%</Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${fileUploadProgress}%` }]} />
-              </View>
+              <TouchableOpacity
+                style={styles.templateButton}
+                onPress={downloadTemplate}
+                disabled={isLoading}
+                activeOpacity={0.85}
+              >
+                <Feather name="download" size={16} color="#4F46E5" />
+                <Text style={styles.templateButtonText}>Template</Text>
+              </TouchableOpacity>
             </View>
-          )}
 
-          <Text style={styles.orText}>OR Add Manually</Text>
+            <TouchableOpacity
+              style={styles.previewButton}
+              onPress={handlePreviewAndUpload}
+              disabled={isLoading}
+              activeOpacity={0.85}
+            >
+              <Feather name="eye" size={16} color="#fff" />
+              <Text style={styles.previewButtonText}>
+                Preview Excel Before Upload
+              </Text>
+            </TouchableOpacity>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Enter question"
-            value={questionData.question}
-            onChangeText={(value) => handleInputChange('question', value)}
-            editable={!isLoading}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Option 1"
-            value={questionData.option1}
-            onChangeText={(value) => handleInputChange('option1', value)}
-            editable={!isLoading}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Option 2"
-            value={questionData.option2}
-            onChangeText={(value) => handleInputChange('option2', value)}
-            editable={!isLoading}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Option 3"
-            value={questionData.option3}
-            onChangeText={(value) => handleInputChange('option3', value)}
-            editable={!isLoading}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Option 4"
-            value={questionData.option4}
-            onChangeText={(value) => handleInputChange('option4', value)}
-            editable={!isLoading}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Correct Answer"
-            value={questionData.correct_answer}
-            onChangeText={(value) => handleInputChange('correct_answer', value)}
-            editable={!isLoading}
-          />
-
-          <TouchableOpacity 
-            style={[styles.addButton, isLoading && styles.disabledButton]} 
-            onPress={addQuestion}
-            disabled={isLoading}
-          >
-            <Text style={styles.addButtonText}>Add Question</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.questionCount}>
-            Total Questions: {questions.length}
-          </Text>
-
-          <FlatList
-            data={questions}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item, index }) => (
-              <View style={styles.questionCard}>
-                <View style={styles.questionHeader}>
-                  <Text style={styles.questionNumber}>Q{index + 1}.</Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const updated = [...questions];
-                      updated.splice(index, 1);
-                      setQuestions(updated);
-                    }}
-                    style={styles.deleteButton}
-                    disabled={isLoading}
-                  >
-                    <Text style={styles.deleteButtonText}>✕</Text>
-                  </TouchableOpacity>
+            {isLoading && (
+              <View style={styles.progressContainer}>
+                <Text style={styles.progressText}>
+                  Uploading: {fileUploadProgress}%
+                </Text>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${fileUploadProgress}%` },
+                    ]}
+                  />
                 </View>
-                <Text style={styles.questionText}>{item.question}</Text>
-                <Text style={styles.optionText}>Option 1: {item.option1}</Text>
-                <Text style={styles.optionText}>Option 2: {item.option2}</Text>
-                <Text style={styles.optionText}>Option 3: {item.option3}</Text>
-                <Text style={styles.optionText}>Option 4: {item.option4}</Text>
-                <Text style={styles.correctAnswer}>Correct Answer: {item.correct_answer}</Text>
               </View>
             )}
-          />
 
-          <TouchableOpacity 
-            style={[styles.submitButton, (questions.length === 0 || isLoading) && styles.disabledButton]} 
-            onPress={handleSubmit}
-            disabled={questions.length === 0 || isLoading}
-          >
-            <Text style={styles.submitButtonText}>
-              {isLoading ? 'Uploading...' : `Submit ${questions.length} Questions`}
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>OR Add Manually</Text>
+              <View style={styles.orLine} />
+            </View>
+
+            <View style={styles.formSection}>
+              <Text style={styles.inputLabel}>Question</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your question"
+                placeholderTextColor="#9CA3AF"
+                value={questionData.question}
+                onChangeText={(value) => handleInputChange('question', value)}
+                editable={!isLoading}
+              />
+
+              <Text style={styles.inputLabel}>Options</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Option 1"
+                placeholderTextColor="#9CA3AF"
+                value={questionData.option1}
+                onChangeText={(value) => handleInputChange('option1', value)}
+                editable={!isLoading}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Option 2"
+                placeholderTextColor="#9CA3AF"
+                value={questionData.option2}
+                onChangeText={(value) => handleInputChange('option2', value)}
+                editable={!isLoading}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Option 3"
+                placeholderTextColor="#9CA3AF"
+                value={questionData.option3}
+                onChangeText={(value) => handleInputChange('option3', value)}
+                editable={!isLoading}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Option 4"
+                placeholderTextColor="#9CA3AF"
+                value={questionData.option4}
+                onChangeText={(value) => handleInputChange('option4', value)}
+                editable={!isLoading}
+              />
+
+              <Text style={styles.inputLabel}>Correct Answer</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter correct answer"
+                placeholderTextColor="#9CA3AF"
+                value={questionData.correct_answer}
+                onChangeText={(value) =>
+                  handleInputChange('correct_answer', value)
+                }
+                editable={!isLoading}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.addButton, isLoading && styles.disabledButton]}
+              onPress={addQuestion}
+              disabled={isLoading}
+              activeOpacity={0.85}
+            >
+              <Feather name="plus-circle" size={18} color="#fff" />
+              <Text style={styles.addButtonText}>Add Question</Text>
+            </TouchableOpacity>
+
+            <View style={styles.questionCountRow}>
+              <Text style={styles.questionCountLabel}>Total Questions</Text>
+              <View style={styles.questionCountBadge}>
+                <Text style={styles.questionCountNumber}>
+                  {questions.length}
+                </Text>
+              </View>
+            </View>
+
+            <FlatList
+              data={questions}
+              showsVerticalScrollIndicator={false}
+              keyExtractor={(item, index) => index.toString()}
+              scrollEnabled={false}
+              renderItem={({ item, index }) => (
+                <View style={styles.questionCard}>
+                  <View style={styles.questionHeader}>
+                    <View style={styles.questionNumberBox}>
+                      <Text style={styles.questionNumber}>Q{index + 1}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const updated = [...questions];
+                        updated.splice(index, 1);
+                        setQuestions(updated);
+                      }}
+                      style={styles.deleteButton}
+                      disabled={isLoading}
+                    >
+                      <Feather name="trash-2" size={14} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.questionText}>{item.question}</Text>
+                  <Text style={styles.optionText}>1. {item.option1}</Text>
+                  <Text style={styles.optionText}>2. {item.option2}</Text>
+                  <Text style={styles.optionText}>3. {item.option3}</Text>
+                  <Text style={styles.optionText}>4. {item.option4}</Text>
+                  <View style={styles.correctRow}>
+                    <Feather name="check-circle" size={14} color="#10B981" />
+                    <Text style={styles.correctAnswer}>
+                      Correct: {item.correct_answer}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            />
+
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                (questions.length === 0 || isLoading) && styles.disabledButton,
+              ]}
+              onPress={handleSubmit}
+              disabled={questions.length === 0 || isLoading}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={['#7C3AED', '#4F46E5']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.submitGradient}
+              >
+                <Text style={styles.submitButtonText}>
+                  {isLoading
+                    ? 'Uploading...'
+                    : `Submit ${questions.length} Questions`}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </>
+        ) : (
+          // ✅ Jab subject select na ho - sirf yeh message dikhe
+          <View style={styles.noSelectionContainer}>
+            <View style={styles.noSelectionIconBox}>
+              <AntDesign name="exclamationcircle" size={50} color="#4F46E5" />
+            </View>
+            <Text style={styles.noSelectionText}>
+              Please select Board → Class → Subject
             </Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        // ✅ Jab subject select na ho - sirf yeh message dikhe
-        <View style={styles.noSelectionContainer}>
-          <AntDesign name="exclamationcircle" size={60} color="#6C63FF" />
-          <Text style={styles.noSelectionText}>
-            Please select Board → Class → Subject
-          </Text>
-          <Text style={styles.noSelectionSubText}>
-            You need to select a subject first before adding questions
-          </Text>
-          <TouchableOpacity onPress={openBottomSheet} style={styles.selectNowButton}>
-            <Text style={styles.selectNowButtonText}>Select Now</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+            <Text style={styles.noSelectionSubText}>
+              You need to select a subject first before adding questions
+            </Text>
+            <TouchableOpacity
+              onPress={openBottomSheet}
+              style={styles.selectNowButton}
+              activeOpacity={0.85}
+            >
+              <Feather name="check" size={16} color="#fff" />
+              <Text style={styles.selectNowButtonText}>Select Now</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
 
       {/* ✅ MODAL */}
-      <Modal 
-        isVisible={isModalVisible} 
+      <Modal
+        isVisible={isModalVisible}
         onBackdropPress={closeBottomSheet}
         onSwipeComplete={closeBottomSheet}
         swipeDirection="down"
@@ -717,9 +856,14 @@ const QuestionUpload = () => {
       >
         <View style={styles.bottomSheet}>
           <View style={styles.modalHeaderRow}>
-            <Text style={styles.modalHeader}>Select Board → Class → Subject</Text>
-            <TouchableOpacity onPress={closeBottomSheet} style={styles.closeModalBtn}>
-              <Text style={styles.closeModalBtnText}>✕</Text>
+            <Text style={styles.modalHeader}>
+              Select Board → Class → Subject
+            </Text>
+            <TouchableOpacity
+              onPress={closeBottomSheet}
+              style={styles.closeModalBtn}
+            >
+              <Feather name="x" size={18} color="#6B7280" />
             </TouchableOpacity>
           </View>
 
@@ -761,243 +905,450 @@ const QuestionUpload = () => {
             </>
           )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
-              styles.confirmButton, 
-              (!selectedBoard || !selectedClass || !selectedSubject) && styles.disabledButton
-            ]} 
+              styles.confirmButton,
+              (!selectedBoard || !selectedClass || !selectedSubject) &&
+                styles.disabledButton,
+            ]}
             onPress={handleConfirmSelection}
-            disabled={!selectedBoard || !selectedClass || !selectedSubject || isLoading}
+            disabled={
+              !selectedBoard || !selectedClass || !selectedSubject || isLoading
+            }
+            activeOpacity={0.85}
           >
-            <Text style={styles.confirmButtonText}>
-              {selectedBoard && selectedClass && selectedSubject 
-                ? '✅ Confirm Selection' 
-                : 'Please select Board → Class → Subject'}
-            </Text>
+            <LinearGradient
+              colors={['#7C3AED', '#4F46E5']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.confirmGradient}
+            >
+              <Text style={styles.confirmButtonText}>
+                {selectedBoard && selectedClass && selectedSubject
+                  ? '✅ Confirm Selection'
+                  : 'Please select Board → Class → Subject'}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8FAFC',
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
+
+  // 🔵 HEADER GRADIENT
+  headerGradient: {
+    paddingTop: 45,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  decorCircle1: {
+    position: 'absolute',
+    top: -60,
+    right: -50,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  decorCircle2: {
+    position: 'absolute',
+    bottom: -70,
+    left: -60,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 2,
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 17,
+    color: '#fff',
+    fontFamily: 'roboto-bold',
+    position: 'absolute',
+    left: 0,
+    right: 0,
     textAlign: 'center',
+    zIndex: -1,
   },
+  headerIconBox: {
+    width: 46,
+    height: 46,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  headerGlowCircle: {
+    position: 'absolute',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+  },
+  headerIconEmoji: {
+    fontSize: 26,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
+  },
+
+  // 📦 Scroll Body
+  scrollBody: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+
+  // ✅ Selection Status
   selectionStatus: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#F0FDF4',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
     marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    gap: 8,
+  },
+  selectionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  selectionIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#DCFCE7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   selectionText: {
-    fontSize: 13,
-    color: '#2E7D32',
-    fontWeight: '500',
+    fontSize: 12,
+    color: '#065F46',
+    fontFamily: 'roboto-bold',
     flex: 1,
+    lineHeight: 16,
   },
   changeButton: {
-    backgroundColor: '#2E7D32',
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    borderRadius: 5,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   changeButtonText: {
     color: '#FFF',
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 11,
+    fontFamily: 'roboto-bold',
   },
+
+  // 📤 Bulk Section
   bulkSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
+    gap: 10,
   },
   bulkButton: {
     flex: 1,
-    backgroundColor: '#6C63FF',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 5,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#4F46E5',
+    borderRadius: 12,
+    paddingVertical: 12,
   },
   bulkButtonText: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontFamily: 'roboto-bold',
   },
   templateButton: {
     flex: 1,
-    backgroundColor: '#FF6B6B',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 5,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
   },
   templateButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: '#4F46E5',
+    fontSize: 13,
+    fontFamily: 'roboto-bold',
   },
   previewButton: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    paddingVertical: 12,
     marginBottom: 10,
   },
   previewButtonText: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontFamily: 'roboto-bold',
   },
   disabledButton: {
     opacity: 0.5,
   },
+
+  // 📊 Progress
   progressContainer: {
     marginBottom: 15,
-    padding: 10,
-    backgroundColor: '#FFF',
-    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   progressText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 5,
+    fontSize: 13,
+    color: '#1E3A8A',
+    fontFamily: 'roboto-bold',
+    marginBottom: 6,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#EEF2FF',
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#4F46E5',
     borderRadius: 4,
   },
+
+  // 🔀 OR Divider
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+    gap: 10,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
   orText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#888',
-    marginVertical: 10,
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: 'roboto-bold',
+  },
+
+  // 📝 Form Section
+  formSection: {
+    marginBottom: 14,
+  },
+  inputLabel: {
+    fontSize: 12,
+    color: '#1E3A8A',
+    fontFamily: 'roboto-bold',
+    marginBottom: 6,
+    marginLeft: 4,
   },
   input: {
     height: 50,
     backgroundColor: '#FFF',
-    borderRadius: 10,
-    paddingHorizontal: 15,
+    borderRadius: 12,
+    paddingHorizontal: 14,
     marginBottom: 10,
-    fontSize: 16,
+    fontSize: 14,
+    color: '#1E3A8A',
+    fontFamily: 'roboto',
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
+
+  // ➕ Add Button
   addButton: {
-    backgroundColor: '#28A745',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 16,
   },
   addButtonText: {
     color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: 'roboto-bold',
   },
-  questionCount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
+
+  // 🔢 Question Count
+  questionCountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
+  questionCountLabel: {
+    fontSize: 14,
+    fontFamily: 'roboto-bold',
+    color: '#1E3A8A',
+  },
+  questionCountBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  questionCountNumber: {
+    fontSize: 13,
+    fontFamily: 'roboto-bold',
+    color: '#4F46E5',
+  },
+
+  // 📋 Question Card
   questionCard: {
     backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 10,
+    padding: 14,
+    borderRadius: 14,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#EEE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   questionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 10,
+  },
+  questionNumberBox: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
   questionNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#6C63FF',
+    fontSize: 12,
+    fontFamily: 'roboto-bold',
+    color: '#4F46E5',
   },
   deleteButton: {
     width: 30,
     height: 30,
-    borderRadius: 15,
-    backgroundColor: '#FF4444',
+    borderRadius: 10,
+    backgroundColor: '#EF4444',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   questionText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#333',
+    fontSize: 14,
+    fontFamily: 'roboto-bold',
+    marginBottom: 8,
+    color: '#1E3A8A',
+    lineHeight: 20,
   },
   optionText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 12,
+    color: '#4B5563',
+    fontFamily: 'roboto',
+    marginBottom: 2,
+  },
+  correctRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F0FDF4',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
   },
   correctAnswer: {
-    fontSize: 16,
-    color: '#28A745',
-    fontWeight: 'bold',
-    marginTop: 5,
+    fontSize: 12,
+    color: '#065F46',
+    fontFamily: 'roboto-bold',
   },
+
+  // 🚀 Submit Button
   submitButton: {
-    backgroundColor: COLOR.background,
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
+    borderRadius: 14,
+    overflow: 'hidden',
     marginTop: 20,
-    marginBottom: 30,
+    marginBottom: 20,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  submitGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRadius: 14,
   },
   submitButtonText: {
     color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontFamily: 'roboto-bold',
   },
+
+  // 📌 Modal
   label: {
-    fontSize: 16,
-    color: '#555',
-    marginBottom: 8,
+    fontSize: 13,
+    color: '#1E3A8A',
+    marginBottom: 6,
     marginTop: 10,
-    fontWeight: '500',
+    fontFamily: 'roboto-bold',
   },
   bottomSheet: {
     backgroundColor: '#FFF',
     padding: 20,
-    borderRadius: 20,
+    borderRadius: 24,
     maxHeight: '80%',
   },
   modalStyle: {
@@ -1008,100 +1359,121 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 14,
   },
   modalHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontFamily: 'roboto-bold',
+    color: '#1E3A8A',
     flex: 1,
   },
   closeModalBtn: {
-    padding: 8,
-    backgroundColor: '#f0f0f0',
+    padding: 6,
+    backgroundColor: '#F3F4F6',
     borderRadius: 20,
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeModalBtnText: {
-    fontSize: 18,
-    color: '#666',
-    fontWeight: 'bold',
-  },
   confirmButton: {
-    backgroundColor: '#007BFF',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
     marginTop: 20,
+  },
+  confirmGradient: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 12,
   },
   confirmButtonText: {
     color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: 'roboto-bold',
   },
+
+  // 🚫 No Selection
   noSelectionContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 50,
     backgroundColor: '#FFF',
-    borderRadius: 12,
-    marginVertical: 20,
+    borderRadius: 20,
+    marginTop: 20,
     paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  noSelectionIconBox: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   noSelectionText: {
-    fontSize: 18,
-    color: '#333',
+    fontSize: 16,
+    color: '#1E3A8A',
     textAlign: 'center',
-    marginTop: 16,
     fontFamily: 'roboto-bold',
   },
   noSelectionSubText: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: 13,
+    color: '#6B7280',
     textAlign: 'center',
     marginTop: 8,
     fontFamily: 'roboto',
+    lineHeight: 18,
   },
   selectNowButton: {
-    backgroundColor: '#6C63FF',
-    paddingHorizontal: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 28,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 20,
   },
   selectNowButtonText: {
     color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: 'roboto-bold',
   },
 });
 
 const pickerSelectStyles = {
   inputIOS: {
-    fontSize: 16,
+    fontSize: 14,
     paddingVertical: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 4,
-    color: 'black',
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    color: '#1E3A8A',
     paddingRight: 30,
     backgroundColor: '#FFF',
     marginBottom: 10,
+    fontFamily: 'roboto',
   },
   inputAndroid: {
-    fontSize: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    fontSize: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 4,
-    color: 'black',
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    color: '#1E3A8A',
     paddingRight: 30,
     backgroundColor: '#FFF',
     marginBottom: 10,
+    fontFamily: 'roboto',
   },
 };
 
