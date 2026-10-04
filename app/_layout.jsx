@@ -177,6 +177,8 @@ export default function RootLayout() {
           
           <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs2)" options={{ headerShown: false }} />
+          <Stack.Screen name="(associate)" options={{ headerShown: false }} />   {/* ✅ YE ADD KARO */}
+
           <Stack.Screen name="screen/courseDetails" options={{ headerShown: false }} />
           <Stack.Screen name="screen/allClass" options={{ headerShown: false }} />
           <Stack.Screen name="screen/allMentors" options={{ headerShown: false }} />

@@ -158,14 +158,7 @@ export default function Index() {
               {teacher?.name || teacher?.full_name || 'Teacher Name'}
             </Text>
 
-            <View style={styles.infoRow}>
-              <Feather name="phone" size={12} color="rgba(255,255,255,0.85)" />
-              <Text style={styles.phone}>
-                {teacher?.mobile || 'No Phone'}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
+                     <View style={styles.infoRow}>
               <Feather
                 name="map-pin"
                 size={12}
@@ -175,6 +168,15 @@ export default function Index() {
                 {teacher?.address || 'No Address'}
               </Text>
             </View>
+
+            <View style={styles.infoRow}>
+              <Feather name="phone" size={12} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.phone}>
+                {teacher?.mobile || 'No Phone'}
+              </Text>
+            </View>
+
+   
 
             <View style={styles.badge}>
               <Text style={styles.badgeText}>

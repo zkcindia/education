@@ -6,22 +6,26 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  ScrollView, // ✅ Added — kyunki 3 cards ke baad scroll ki zaroorat pad sakti hai
   // Image, // Uncomment when you add images
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router'; // ✅ CHANGED: useNavigation → useRouter
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
 
 export default function RoleSelection() {
-  const navigation = useNavigation();
+  const router = useRouter(); // ✅ CHANGED
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => navigation.goBack()}
+    <ScrollView
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.back()} // ✅ CHANGED
       >
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
@@ -29,20 +33,19 @@ export default function RoleSelection() {
       <Text style={styles.title}>Choose Your Role</Text>
       <Text style={styles.subtitle}>Select how you want to sign up</Text>
 
-      {/* Student Card */}
+      {/* ───────────────── Student Card ───────────────── */}
       <TouchableOpacity
         style={[styles.roleCard, styles.studentCard]}
-        onPress={() => navigation.navigate('StudentSignUp')}
+        onPress={() => router.push('/StudentSignUp')} // ✅ CHANGED
       >
         {/* IMAGE COMMENT: Uncomment below when you add student-icon.png */}
         {/* <Image
           source={require('../assets/images/student-icon.png')}
           style={styles.roleIcon}
         /> */}
-        
-        {/* Using icon for now - Remove this when using Image */}
+
         <MaterialCommunityIcons name="school" size={50} color="#4CAF50" />
-        
+
         <Text style={styles.roleTitle}>Student</Text>
         <Text style={styles.roleDescription}>
           Join as a student to access courses and learning materials
@@ -52,20 +55,19 @@ export default function RoleSelection() {
         </View>
       </TouchableOpacity>
 
-      {/* Teacher Card */}
+      {/* ───────────────── Teacher Card ───────────────── */}
       <TouchableOpacity
         style={[styles.roleCard, styles.teacherCard]}
-        onPress={() => navigation.navigate('TeacherSignUp')}
+        onPress={() => router.push('/TeacherSignUp')} // ✅ CHANGED
       >
         {/* IMAGE COMMENT: Uncomment below when you add teacher-icon.png */}
         {/* <Image
           source={require('../assets/images/teacher-icon.png')}
           style={styles.roleIcon}
         /> */}
-        
-        {/* Using icon for now - Remove this when using Image */}
+
         <MaterialCommunityIcons name="teacher" size={50} color="#2196F3" />
-        
+
         <Text style={styles.roleTitle}>Teacher</Text>
         <Text style={styles.roleDescription}>
           Join as a teacher to create courses and manage students
@@ -75,22 +77,49 @@ export default function RoleSelection() {
         </View>
       </TouchableOpacity>
 
+      {/* ───────────────── ✅ NEW: Associate Card ───────────────── */}
+      <TouchableOpacity
+        style={[styles.roleCard, styles.associateCard]}
+        // onPress={() => router.push('/(drawer)/(associate)')} // ✅ CHANGED → index.jsx khulega
+        onPress={() => router.push('/(associate)')
+          
+        }
+      > 
+        {/* IMAGE COMMENT: Uncomment below when you add associate-icon.png */}
+        {/* <Image
+          source={require('../assets/images/associate-icon.png')}
+          style={styles.roleIcon}
+        /> */}
+
+        <MaterialCommunityIcons name="account-tie" size={50} color="#FF9800" />
+
+        <Text style={styles.roleTitle}>Associate</Text>
+        <Text style={styles.roleDescription}>
+          Join as an associate to refer students and earn commissions
+        </Text>
+        <View style={styles.arrowContainer}>
+          <Ionicons name="arrow-forward" size={24} color="#003096" />
+        </View>
+      </TouchableOpacity>
+
+      {/* ───────────────── Footer ───────────────── */}
       <View style={styles.footerTextContainer}>
         <Text style={styles.footerText}>Already have an account?</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('signIn')}>
+        <TouchableOpacity onPress={() => router.push('/signIn')}> {/* ✅ CHANGED */}
           <Text style={styles.signInText}>Sign in Here</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1, // ✅ flex: 1 se flexGrow: 1 kiya (ScrollView ke liye)
     backgroundColor: '#fff',
     paddingHorizontal: width * 0.05,
     paddingTop: 50,
+    paddingBottom: 30, // ✅ bottom padding add ki
   },
   backButton: {
     marginBottom: 20,
@@ -126,6 +155,11 @@ const styles = StyleSheet.create({
   teacherCard: {
     borderColor: '#2196F3',
     backgroundColor: '#f0f4f8',
+  },
+  // ✅ NEW: Associate card style
+  associateCard: {
+    borderColor: '#FF9800',
+    backgroundColor: '#fff8f0',
   },
   roleIcon: {
     width: 50,

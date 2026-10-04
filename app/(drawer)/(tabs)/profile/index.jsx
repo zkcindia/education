@@ -6,14 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Dimensions,
-  Share,
-  Platform,
   ActivityIndicator,
+  Share,
+  Dimensions,
 } from 'react-native';
 
 import React, { useEffect, useState } from 'react';
-import { COLOR } from '../../../../constants/Colors';
+import { useNavigation } from '@react-navigation/native';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
@@ -21,105 +20,66 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const { width } = Dimensions.get('window');
+// import { COLOR } from '../../../constants/Colors';
+import { getWalletBalance } from '../../../../constants/api/apiPayment';
 
-// const API_URL = 'http://192.168.29.78:8000';
+const { width } = Dimensions.get('window');
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function Index() {
   const navigation = useNavigation();
 
+  const [student, setStudent] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const [profile, setProfile] = useState({
-    fullName: '',
-    fathersName: '',
-    email: '',
-    phoneNumber: '',
-    address: '',
-    dob: new Date(),
-    gender: '',
-    className: '',
-    image: '',
-  });
-
   useEffect(() => {
-    getUser();
+    loadStudentProfile();
+    loadWalletBalance();
   }, []);
 
-  const getUser = async () => {
+  const loadStudentProfile = async () => {
     try {
-      const user = await AsyncStorage.getItem('userData');
+      const userData = await AsyncStorage.getItem('userData');
 
-      if (user) {
-        const parsedUser = JSON.parse(user);
-        console.log('LOGIN USER:', parsedUser);
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
 
-        fetchProfile(parsedUser.id);
-      } else {
-        setLoading(false);
+        const response = await axios.get(
+          `${API_URL}/user-data/${parsedUser.id}/`
+        );
+
+        setStudent(response.data);
       }
     } catch (error) {
-      console.log('USER ERROR:', error);
-      setLoading(false);
-    }
-  };
-
-  const fetchProfile = async (id) => {
-    try {
-      setLoading(true);
-
-      const response = await axios.get(`${API_URL}/user-data/${id}/`);
-
-      console.log('PROFILE DATA:', response.data);
-
-      const data = response.data;
-
-      setProfile({
-        fullName: data.name || '',
-        fathersName: data.father_name || '',
-        email: data.email || '',
-        phoneNumber: data.mobile ? data.mobile.toString() : '',
-        address: data.address || '',
-        dob: data.DOB ? new Date(data.DOB) : new Date(),
-        gender: data.gender || '',
-        className: '',
-        image: data.image ? `${API_URL}${data.image}` : '',
-      });
-    } catch (error) {
-      console.log('PROFILE FETCH ERROR:', error?.response?.data || error.message);
+      console.log(
+        'Student profile error:',
+        error?.response?.data || error.message
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleShare = async () => {
-    const APP_LINK =
-      'https://play.google.com/store/apps/details?id=com.google.android.apps.bard';
-
-    const message = `🚀 Try this AI app: ${APP_LINK}`;
-
+  const loadWalletBalance = async () => {
     try {
-      if (Platform.OS === 'web') {
-        if (navigator.share) {
-          await navigator.share({
-            title: 'AI App',
-            text: message,
-            url: APP_LINK,
-          });
-        } else {
-          await navigator.clipboard.writeText(APP_LINK);
-          alert('Link copied!');
-        }
-      } else {
-        await Share.share({ message });
-      }
+      const data = await getWalletBalance();
+      setWalletBalance(Number(data?.current_balance || 0));
     } catch (error) {
-      console.log(error);
+      console.log('Wallet error:', error?.response?.data || error.message);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: 'Download Candlelights App: https://backend.candlelights.in/',
+      });
+    } catch (error) {
+      console.log('Share error:', error);
     }
   };
 
@@ -130,9 +90,15 @@ export default function Index() {
     navigation.navigate('screen1');
   };
 
+  const profileImage = student?.image
+    ? student.image.startsWith('http')
+      ? student.image
+      : `${API_URL}${student.image}`
+    : 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.loaderContainer}>
+      <SafeAreaView style={styles.loader}>
         <ActivityIndicator size="large" color="#4F46E5" />
       </SafeAreaView>
     );
@@ -155,8 +121,8 @@ export default function Index() {
           <View style={styles.decorCircle1} />
           <View style={styles.decorCircle2} />
 
-          {/* Top Icons Row */}
-          <View style={styles.headerIcons}>
+          {/* Top Row */}
+          <View style={styles.headerTop}>
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={styles.iconBtn}
@@ -178,59 +144,59 @@ export default function Index() {
             </TouchableOpacity>
           </View>
 
-          {/* Profile Info */}
-          <View style={styles.profileInfo}>
+          {/* Profile Box */}
+          <View style={styles.profileBox}>
             {/* Profile Image with Ring */}
             <View style={styles.profileRing}>
               <Image
-                source={{
-                  uri:
-                    profile.image ||
-                    'https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg',
-                }}
+                source={{ uri: profileImage }}
                 style={styles.profileImage}
               />
             </View>
 
-            <View style={styles.profileTextContainer}>
-              <Text style={styles.profileName}>
-                {profile.fullName || 'User'}
+            <Text style={styles.name}>
+              {student?.name || student?.full_name || 'Student Name'}
+            </Text>
+
+            <View style={styles.infoRow}>
+              <Feather name="phone" size={12} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.phone}>
+                {student?.mobile || 'No Phone'}
               </Text>
+            </View>
 
-              <View style={styles.phoneRow}>
-                <Feather name="phone" size={12} color="rgba(255,255,255,0.85)" />
-                <Text style={styles.profilePhone}>
-                  {profile.phoneNumber || 'No Phone'}
-                </Text>
-              </View>
+            <View style={styles.infoRow}>
+              <Feather
+                name="map-pin"
+                size={12}
+                color="rgba(255,255,255,0.85)"
+              />
+              <Text style={styles.address} numberOfLines={1}>
+                {student?.address || 'No Address'}
+              </Text>
+            </View>
 
-              <View style={styles.phoneRow}>
-                <Feather
-                  name="map-pin"
-                  size={12}
-                  color="rgba(255,255,255,0.85)"
-                />
-                <Text style={styles.profileAddress} numberOfLines={1}>
-                  {profile.address || 'No Address'}
-                </Text>
-              </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                🎓 {student?.role || 'Student'}
+              </Text>
             </View>
           </View>
         </LinearGradient>
 
-        {/* 📋 OPTIONS LIST */}
-        <View style={styles.profileOptionsContainer}>
+        {/* 📋 CARDS */}
+        <View style={styles.cardContainer}>
           {/* My Profile */}
           <TouchableOpacity
             style={styles.profileCard}
             onPress={() => navigation.navigate('screen/myProfileScreen')}
             activeOpacity={0.8}
           >
-            <View style={styles.optionRow}>
+            <View style={styles.row}>
               <View style={styles.iconCircle}>
                 <FontAwesome5 name="user-alt" size={18} color="#4F46E5" />
               </View>
-              <Text style={styles.optionText}>My Profile</Text>
+              <Text style={styles.cardText}>My Profile</Text>
             </View>
             <Feather name="chevron-right" size={22} color="#4F46E5" />
           </TouchableOpacity>
@@ -241,7 +207,7 @@ export default function Index() {
             onPress={() => navigation.navigate('refer-earn')}
             activeOpacity={0.8}
           >
-            <View style={styles.optionRow}>
+            <View style={styles.row}>
               <View style={[styles.iconCircle, { backgroundColor: '#FEF3C7' }]}>
                 <MaterialCommunityIcons
                   name="gift-outline"
@@ -249,11 +215,45 @@ export default function Index() {
                   color="#F59E0B"
                 />
               </View>
-
               <View>
-                <Text style={styles.optionText}>Refer & Earnn</Text>
-                <Text style={styles.referSubText}>Earn ₹50 per referral</Text>
+                <Text style={styles.cardText}>Refer & Earn</Text>
+                <Text style={styles.subText}>Earn ₹50 per referral</Text>
               </View>
+            </View>
+            <Feather name="chevron-right" size={22} color="#4F46E5" />
+          </TouchableOpacity>
+
+          {/* My Wallet */}
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={() => navigation.navigate('screen/Wallet')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.row}>
+              <View style={[styles.iconCircle, { backgroundColor: '#DCFCE7' }]}>
+                <Entypo name="wallet" size={18} color="#10B981" />
+              </View>
+              <View>
+                <Text style={styles.cardText}>My Wallet</Text>
+                <Text style={styles.walletText}>
+                  Balance: ₹{walletBalance}
+                </Text>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={22} color="#4F46E5" />
+          </TouchableOpacity>
+
+          {/* Share App */}
+          <TouchableOpacity
+            style={styles.profileCard}
+            onPress={handleShare}
+            activeOpacity={0.8}
+          >
+            <View style={styles.row}>
+              <View style={[styles.iconCircle, { backgroundColor: '#DBEAFE' }]}>
+                <FontAwesome name="share-alt" size={18} color="#3B82F6" />
+              </View>
+              <Text style={styles.cardText}>Share App</Text>
             </View>
             <Feather name="chevron-right" size={22} color="#4F46E5" />
           </TouchableOpacity>
@@ -264,11 +264,11 @@ export default function Index() {
             onPress={handleLogout}
             activeOpacity={0.8}
           >
-            <View style={styles.optionRow}>
+            <View style={styles.row}>
               <View style={[styles.iconCircle, { backgroundColor: '#FEE2E2' }]}>
                 <MaterialIcons name="logout" size={18} color="#DC2626" />
               </View>
-              <Text style={[styles.optionText, { color: '#DC2626' }]}>
+              <Text style={[styles.cardText, { color: '#DC2626' }]}>
                 Logout
               </Text>
             </View>
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
 
-  loaderContainer: {
+  loader: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -295,8 +295,8 @@ const styles = StyleSheet.create({
 
   // 🔵 HEADER
   header: {
-    paddingTop: 40,
-    paddingBottom: 40,
+    paddingTop: 45,
+    paddingBottom: 30,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
@@ -304,33 +304,32 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
-  // Decorative Circles
   decorCircle1: {
     position: 'absolute',
-    top: -60,
+    top: -70,
     right: -50,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
     backgroundColor: 'rgba(255,255,255,0.10)',
   },
   decorCircle2: {
     position: 'absolute',
-    bottom: -70,
+    bottom: -80,
     left: -60,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
 
-  // Top Icons
-  headerIcons: {
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     zIndex: 2,
   },
+
   iconBtn: {
     width: 38,
     height: 38,
@@ -340,17 +339,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Profile Info
-  profileInfo: {
-    marginTop: 18,
-    justifyContent: 'center',
+  profileBox: {
     alignItems: 'center',
+    marginTop: 18,
     zIndex: 2,
   },
+
   profileRing: {
-    width: width * 0.30,
-    height: width * 0.30,
-    borderRadius: width * 0.15,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.5)',
     justifyContent: 'center',
@@ -358,47 +356,63 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
   },
   profileImage: {
-    width: width * 0.26,
-    height: width * 0.26,
-    borderRadius: width * 0.13,
+    width: 98,
+    height: 98,
+    borderRadius: 49,
     backgroundColor: '#fff',
   },
 
-  profileTextContainer: {
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  profileName: {
+  name: {
     color: '#fff',
     fontFamily: 'roboto-bold',
-    fontSize: width * 0.048,
+    fontSize: 19,
     textAlign: 'center',
+    marginTop: 12,
   },
-  phoneRow: {
+
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginTop: 5,
   },
-  profilePhone: {
+
+  phone: {
     color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
     fontFamily: 'roboto',
     fontSize: 12,
   },
-  profileAddress: {
+
+  address: {
     color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
     fontFamily: 'roboto',
     fontSize: 12,
-    textAlign: 'center',
     maxWidth: width * 0.7,
   },
 
-  // 📋 OPTIONS
-  profileOptionsContainer: {
+  badge: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontFamily: 'roboto-bold',
+  },
+
+  // 📋 Cards
+  cardContainer: {
     padding: 16,
-    marginTop: 8,
     gap: 10,
+    marginTop: 8,
   },
 
   profileCard: {
@@ -419,7 +433,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
   },
 
-  optionRow: {
+  row: {
     flexDirection: 'row',
     gap: 14,
     alignItems: 'center',
@@ -435,16 +449,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  optionText: {
+  cardText: {
     fontSize: 14,
     color: '#1E3A8A',
     fontFamily: 'roboto-bold',
   },
 
-  referSubText: {
+  subText: {
     fontSize: 11,
     color: '#F59E0B',
     marginTop: 2,
     fontFamily: 'roboto',
+  },
+
+  walletText: {
+    fontSize: 11,
+    color: '#10B981',
+    marginTop: 2,
+    fontFamily: 'roboto-bold',
   },
 });
