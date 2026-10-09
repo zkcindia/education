@@ -16,7 +16,7 @@ import Feather from '@expo/vector-icons/Feather';
 
 import { useRouter } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
-import { signUpUser } from '../../constants/api/apiSignUp';
+import { signUpReferrer } from '../../constants/api/apiAssociate';
 
 const { width } = Dimensions.get('window');
 
@@ -26,25 +26,24 @@ export default function ExecutiveSignUp() {
 
   // Basic fields
   const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
   const [email, setEmail] = useState('');
-  const [mobileNo, setMobileNo] = useState('');
+  const [mobile, setMobile] = useState('');          // ✅ API field: mobile
   const [password, setPassword] = useState('');
   const [cpassword, setCpassword] = useState('');
-  const [role] = useState('Executive'); // Fixed
 
   // Executive specific
   const [district, setDistrict] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
 
-  // 🔥 District Head ka referral code (mandatory, top pe)
-  const [districtHeadReferralCode, setDistrictHeadReferralCode] = useState('');
+  // 🔥 District Head ka referral code (mandatory)
+  const [dealerCode, setDealerCode] = useState('');
 
   // Dropdown states
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [cpasswordVisible, setCpasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // ─────────── Odisha districts (30) ───────────
   const districts = [
@@ -58,7 +57,7 @@ export default function ExecutiveSignUp() {
 
   const handleSignup = async () => {
     // Validation
-    if (!districtHeadReferralCode.trim()) {
+    if (!dealerCode.trim()) {
       toast.show('Please enter District Head Referral Code', {
         type: 'danger',
       });
@@ -80,7 +79,7 @@ export default function ExecutiveSignUp() {
       toast.show('Passwords do not match', { type: 'danger' });
       return;
     }
-    if (!mobileNo.trim()) {
+    if (!mobile.trim()) {
       toast.show('Please enter your mobile number', { type: 'danger' });
       return;
     }
@@ -94,40 +93,48 @@ export default function ExecutiveSignUp() {
     }
 
     try {
+      setLoading(true);
+
+      // ✅ API payload — exactly backend ke hisaab se
       const payload = {
         name: name.trim(),
         email: email.trim(),
+        mobile: mobile.trim(),
         password: password,
-        role: role, // 'Executive'
-        mobile_no: mobileNo.trim(),
-        address: address.trim(),
+        dealer_code: dealerCode.trim(),        // 🔥 District head referral code
         district: district,
         city: city.trim(),
         pincode: pincode.trim(),
-
-        // 🔥 District Head ka referral code (mandatory)
-        district_head_referral_code: districtHeadReferralCode.trim(),
       };
 
       console.log('EXECUTIVE PAYLOAD:', JSON.stringify(payload, null, 2));
 
-      const response = await signUpUser(payload);
+      const response = await signUpReferrer(payload);
+
+      console.log('EXECUTIVE RESPONSE:', response?.data);
 
       if (response.status === 201 && response.data.status === true) {
-        toast.show('Executive account created successfully!', {
-          type: 'success',
-          duration: 2000,
-        });
+        toast.show(
+          response.data.message || 'Executive account created successfully!',
+          { type: 'success', duration: 2500 }
+        );
 
         router.replace('/signIn');
+      } else {
+        toast.show('Unexpected response from server', { type: 'danger' });
       }
     } catch (error) {
-      console.log('EXECUTIVE SIGNUP ERROR:', error?.response?.data);
+      console.log('EXECUTIVE SIGNUP ERROR:', error?.response?.data || error);
 
-      toast.show(
-        error?.response?.data?.error || 'An error occurred during signup',
-        { type: 'danger', duration: 2500 }
-      );
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.response?.data?.detail ||
+        'An error occurred during signup';
+
+      toast.show(errorMsg, { type: 'danger', duration: 2500 });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -154,8 +161,8 @@ export default function ExecutiveSignUp() {
         <InputField
           label="District Head Referral Code *"
           placeholder="Enter district head's code"
-          value={districtHeadReferralCode}
-          onChangeText={setDistrictHeadReferralCode}
+          value={dealerCode}
+          onChangeText={setDealerCode}
         />
 
         <InputField
@@ -163,13 +170,6 @@ export default function ExecutiveSignUp() {
           placeholder="Enter your full name"
           value={name}
           onChangeText={setName}
-        />
-
-        <InputField
-          label="Address"
-          placeholder="Enter your full address"
-          value={address}
-          onChangeText={setAddress}
         />
 
         <InputField
@@ -183,8 +183,8 @@ export default function ExecutiveSignUp() {
         <InputField
           label="Mobile Number *"
           placeholder="Enter mobile number"
-          value={mobileNo}
-          onChangeText={setMobileNo}
+          value={mobile}
+          onChangeText={setMobile}
           keyboardType="phone-pad"
         />
 
@@ -226,8 +226,14 @@ export default function ExecutiveSignUp() {
           onToggleVisibility={() => setCpasswordVisible(!cpasswordVisible)}
         />
 
-        <TouchableOpacity style={styles.signUpButton} onPress={handleSignup}>
-          <Text style={styles.signUpButtonText}>EXECUTIVE SIGN UP</Text>
+        <TouchableOpacity
+          style={[styles.signUpButton, loading && { opacity: 0.6 }]}
+          onPress={handleSignup}
+          disabled={loading}
+        >
+          <Text style={styles.signUpButtonText}>
+            {loading ? 'CREATING ACCOUNT...' : 'EXECUTIVE SIGN UP'}
+          </Text>
         </TouchableOpacity>
       </View>
 

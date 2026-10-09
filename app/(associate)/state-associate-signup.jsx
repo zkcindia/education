@@ -16,7 +16,7 @@ import Feather from '@expo/vector-icons/Feather';
 
 import { useRouter } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
-import { signUpUser } from '../../constants/api/apiSignUp';
+import { signUpUser } from '../../constants/api/apiAssociate';
 
 const { width } = Dimensions.get('window');
 
@@ -28,21 +28,20 @@ export default function AssociateSignUp() {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [email, setEmail] = useState('');
-  const [mobileNo, setMobileNo] = useState('');
+  const [mobile, setMobile] = useState('');           // ✅ API field name: mobile
   const [password, setPassword] = useState('');
   const [cpassword, setCpassword] = useState('');
-  const [role] = useState('Associate'); // Fixed
 
   // Associate specific (District Head)
   const [district, setDistrict] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
-  const [referralCode, setReferralCode] = useState('');
 
   // Dropdown states
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [cpasswordVisible, setCpasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // ─────────── Odisha districts (30) ───────────
   const districts = [
@@ -72,7 +71,7 @@ export default function AssociateSignUp() {
       toast.show('Passwords do not match', { type: 'danger' });
       return;
     }
-    if (!mobileNo.trim()) {
+    if (!mobile.trim()) {
       toast.show('Please enter your mobile number', { type: 'danger' });
       return;
     }
@@ -86,38 +85,48 @@ export default function AssociateSignUp() {
     }
 
     try {
+      setLoading(true);
+
+      // ✅ API payload — exactly backend ke hisaab se
       const payload = {
         name: name.trim(),
-        email: email.trim(),
-        password: password,
-        role: role, // 'Associate'
-        mobile_no: mobileNo.trim(),
         address: address.trim(),
+        email: email.trim(),
+        mobile: mobile.trim(),
+        password: password,
         district: district,
         city: city.trim(),
         pincode: pincode.trim(),
-        referral_code: referralCode.trim() || undefined,
       };
 
       console.log('ASSOCIATE PAYLOAD:', JSON.stringify(payload, null, 2));
 
       const response = await signUpUser(payload);
 
+      console.log('ASSOCIATE RESPONSE:', response?.data);
+
       if (response.status === 201 && response.data.status === true) {
-        toast.show('Associate account created successfully!', {
-          type: 'success',
-          duration: 2000,
-        });
+        toast.show(
+          response.data.message || 'Associate account created successfully!',
+          { type: 'success', duration: 2500 }
+        );
 
         router.replace('/signIn');
+      } else {
+        toast.show('Unexpected response from server', { type: 'danger' });
       }
     } catch (error) {
-      console.log('ASSOCIATE SIGNUP ERROR:', error?.response?.data);
+      console.log('ASSOCIATE SIGNUP ERROR:', error?.response?.data || error);
 
-      toast.show(
-        error?.response?.data?.error || 'An error occurred during signup',
-        { type: 'danger', duration: 2500 }
-      );
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.response?.data?.detail ||
+        'An error occurred during signup';
+
+      toast.show(errorMsg, { type: 'danger', duration: 2500 });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -165,8 +174,8 @@ export default function AssociateSignUp() {
         <InputField
           label="Mobile Number *"
           placeholder="Enter mobile number"
-          value={mobileNo}
-          onChangeText={setMobileNo}
+          value={mobile}
+          onChangeText={setMobile}
           keyboardType="phone-pad"
         />
 
@@ -192,13 +201,6 @@ export default function AssociateSignUp() {
           keyboardType="numeric"
         />
 
-        <InputField
-          label="Referral Code"
-          placeholder="Enter referral code (Optional)"
-          value={referralCode}
-          onChangeText={setReferralCode}
-        />
-
         <PasswordField
           label="Password *"
           value={password}
@@ -215,8 +217,14 @@ export default function AssociateSignUp() {
           onToggleVisibility={() => setCpasswordVisible(!cpasswordVisible)}
         />
 
-        <TouchableOpacity style={styles.signUpButton} onPress={handleSignup}>
-          <Text style={styles.signUpButtonText}>ASSOCIATE SIGN UP</Text>
+        <TouchableOpacity
+          style={[styles.signUpButton, loading && { opacity: 0.6 }]}
+          onPress={handleSignup}
+          disabled={loading}
+        >
+          <Text style={styles.signUpButtonText}>
+            {loading ? 'CREATING ACCOUNT...' : 'ASSOCIATE SIGN UP'}
+          </Text>
         </TouchableOpacity>
       </View>
 
