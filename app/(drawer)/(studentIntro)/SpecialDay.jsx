@@ -132,7 +132,9 @@ export default function SpecialDay() {
       >
         <TouchableOpacity
           style={styles.continueButton}
-          onPress={() => router.push('/(drawer)/(studentIntro)/StudentDob')}
+          // onPress={() => router.push('/(drawer)/(studentIntro)/StudentDob')}
+          onPress={() => router.push('/(drawer)/(studentIntro)/InspirationScreen')}
+
         >
           <Text style={styles.continueText}>CONTINUE</Text>
         </TouchableOpacity>

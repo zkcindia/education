@@ -242,7 +242,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { AntDesign } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLOR } from './../../../../constants/Colors';
+import { COLOR } from '../../../../constants/Colors';
 import Banner from '../../../../components/home/Banner';
 import PopularCourse from '../../../../components/home/PopularCourse';
 import FeaturedCourse from '../../../../components/home/featuredCourse';

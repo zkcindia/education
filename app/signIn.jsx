@@ -342,18 +342,18 @@ export default function signUp() {
         }
 
         // ✅ ROUTE BASED ON ROLE
-        if (role === "dealer" || role === "district") {
-          // 🔥 District Head (Dealer)
-          console.log("✅ Navigating to DEALER dashboard");
-          await AsyncStorage.removeItem("hasVisitedStudentIntro");
-          router.replace("/(associate)/dealer-dashboard");
-        } 
-        else if (role === "referrer" || role === "executive") {
-          // 🔥 Executive (Referrer)
-          console.log("✅ Navigating to EXECUTIVE dashboard");
-          await AsyncStorage.removeItem("hasVisitedStudentIntro");
-          router.replace("/(associate)/executive-dashboard");
-        } 
+if (role === "dealer" || role === "district") {
+  console.log("✅ Navigating to DEALER dashboard");
+  await AsyncStorage.removeItem("hasVisitedStudentIntro");
+  // ✅ Naya route (Home + Profile tabs)
+  router.replace("/(associate)/(tabs)/home");
+} 
+else if (role === "referrer" || role === "executive") {
+  console.log("✅ Navigating to EXECUTIVE dashboard");
+  await AsyncStorage.removeItem("hasVisitedStudentIntro");
+  // ✅ Naya route (Executive tabs2)
+  router.replace("/(associate)/(tabs2)/home"); // ✅ Yahi change karna hai
+}
         else if (response.data.teacher_data || role === "teacher") {
           // 🔥 Teacher
           console.log("✅ Navigating to TEACHER dashboard");

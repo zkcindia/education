@@ -349,7 +349,7 @@ const loadClassesByBoard = async boardName => {
           onChangeText={setCpassword}
           visible={cpasswordVisible}
           onToggleVisibility={() => setCpasswordVisible(!cpasswordVisible)}
-        />
+        />http://localhost:8081/(associate)/dealer-dashboard
 
         <InputField
           label="Referral Code"
